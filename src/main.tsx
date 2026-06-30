@@ -82,8 +82,73 @@ document.addEventListener(
   true,
 );
 
+const carrierStyles: Record<string, { background: string; color: string }> = {
+  "Posta Shqiptare (EMS)": {
+    background: "linear-gradient(135deg, #facc15 0%, #facc15 48%, #1d4ed8 52%, #1d4ed8 100%)",
+    color: "#ffffff",
+  },
+  "DHL Standard": {
+    background: "linear-gradient(135deg, #ffcc00 0%, #ffcc00 48%, #d40511 52%, #d40511 100%)",
+    color: "#ffffff",
+  },
+  "DHL Express": {
+    background: "linear-gradient(135deg, #ffcc00 0%, #ffcc00 48%, #d40511 52%, #d40511 100%)",
+    color: "#ffffff",
+  },
+  "UPS Standard": {
+    background: "linear-gradient(135deg, #111111 0%, #111111 48%, #b68a2c 52%, #b68a2c 100%)",
+    color: "#ffffff",
+  },
+  "UPS Express": {
+    background: "linear-gradient(135deg, #111111 0%, #111111 48%, #b68a2c 52%, #b68a2c 100%)",
+    color: "#ffffff",
+  },
+  FedEx: {
+    background: "linear-gradient(135deg, #4d148c 0%, #4d148c 48%, #ff6600 52%, #ff6600 100%)",
+    color: "#ffffff",
+  },
+  Ultra: {
+    background: "#0b4ea2",
+    color: "#ffffff",
+  },
+  "Albanian Courier": {
+    background: "#7f1d1d",
+    color: "#ffffff",
+  },
+  "Elite Post": {
+    background: "linear-gradient(135deg, #15803d 0%, #15803d 48%, #dc2626 52%, #dc2626 100%)",
+    color: "#ffffff",
+  },
+};
+
+function applyCarrierStyles() {
+  document.querySelectorAll<HTMLElement>("div").forEach((element) => {
+    const carrierName = element.textContent?.trim() ?? "";
+    const style = carrierStyles[carrierName];
+    if (!style) return;
+
+    const isPill = element.style.borderRadius === "999px" || element.style.minHeight === "34px";
+    if (!isPill) return;
+
+    element.style.background = style.background;
+    element.style.color = style.color;
+    element.style.textShadow = "0 1px 2px rgba(0,0,0,.38)";
+    element.style.border = "1px solid rgba(255,255,255,.18)";
+    element.style.boxShadow = "0 1px 2px rgba(15,23,42,.12)";
+  });
+}
+
+const carrierStyleObserver = new MutationObserver(applyCarrierStyles);
+carrierStyleObserver.observe(document.documentElement, {
+  childList: true,
+  subtree: true,
+  characterData: true,
+});
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <App />
   </StrictMode>,
 );
+
+queueMicrotask(applyCarrierStyles);
