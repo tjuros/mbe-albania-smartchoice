@@ -4,7 +4,8 @@ import "./dhlRuntime";
 import App from "./App";
 import "./index.css";
 
-const EUR_TO_ALL = 100;
+// Official Bank of Albania reference rate, 30 June 2026.
+const EUR_TO_ALL = 94.14;
 let currentDirection: "outbound" | "inbound" = "outbound";
 let currentCountry = "AL";
 
@@ -33,7 +34,7 @@ const SmartNumberFormat = function (
       const isDomestic = currentDirection === "outbound" && currentCountry === "AL";
 
       if (isDomestic) return `${valueInAll} ALL`;
-      return `${eurFormatter.format(numericValue)} · ≈ ${valueInAll} ALL`;
+      return `${eurFormatter.format(numericValue)} · ≈ ${valueInALL(valueInAll)}`;
     },
     formatToParts(value: number | bigint) {
       return nativeFormatter.formatToParts(value);
@@ -43,6 +44,10 @@ const SmartNumberFormat = function (
     },
   } as Intl.NumberFormat;
 } as unknown as typeof Intl.NumberFormat;
+
+function valueInALL(value: string) {
+  return `${value} ALL`;
+}
 
 SmartNumberFormat.supportedLocalesOf = NativeNumberFormat.supportedLocalesOf.bind(NativeNumberFormat);
 (Intl as unknown as { NumberFormat: typeof Intl.NumberFormat }).NumberFormat = SmartNumberFormat;
@@ -280,6 +285,37 @@ function applyCarrierStyles() {
   });
 }
 
+function applyResultStatusStyles() {
+  const availableLabels = new Set(["Available", "E disponueshme"]);
+  const unavailableLabels = new Set(["Unavailable", "E padisponueshme"]);
+
+  document.querySelectorAll<HTMLElement>("span").forEach((badge) => {
+    const label = badge.textContent?.trim() ?? "";
+
+    if (availableLabels.has(label)) {
+      badge.style.display = "none";
+      return;
+    }
+
+    if (!unavailableLabels.has(label)) return;
+
+    badge.style.background = "#dc2626";
+    badge.style.color = "#ffffff";
+    badge.style.border = "1px solid #b91c1c";
+
+    const badgeRow = badge.parentElement;
+    const contentColumn = badgeRow?.parentElement;
+    const row = contentColumn?.parentElement;
+    const card = row?.parentElement;
+
+    if (card instanceof HTMLElement) {
+      card.style.background = "#fff1f2";
+      card.style.border = "1px solid #f87171";
+      card.style.boxShadow = "0 1px 2px rgba(220,38,38,.08)";
+    }
+  });
+}
+
 let applyScheduled = false;
 function scheduleApply() {
   if (applyScheduled) return;
@@ -290,6 +326,7 @@ function scheduleApply() {
     applyBrandText();
     applyShipmentControls();
     applyCarrierStyles();
+    applyResultStatusStyles();
   });
 }
 
