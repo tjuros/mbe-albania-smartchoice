@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>MBE Albania SmartChoice</title>
-    <meta name="description" content="Mail Boxes Etc. Albania shipping service comparison tool" />
+    <meta name="description" content="MBE Albania shipping service comparison tool" />
     <style>
       * { box-sizing: border-box; }
       html { -webkit-text-size-adjust: 100%; }
@@ -18,5 +18,22 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      const updateMbeDescription = () => {
+        document.querySelectorAll("div, p, span").forEach((element) => {
+          if (element.textContent?.trim() === "Mail Boxes Etc. Albania") {
+            element.textContent = "MBE Albania";
+          }
+        });
+      };
+
+      new MutationObserver(updateMbeDescription).observe(document.documentElement, {
+        childList: true,
+        subtree: true,
+        characterData: true,
+      });
+
+      updateMbeDescription();
+    </script>
   </body>
 </html>
