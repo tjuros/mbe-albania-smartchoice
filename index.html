@@ -38,6 +38,35 @@
         line-height: 1.2 !important;
       }
 
+      .smart-zip-wrap {
+        margin-top: 12px;
+      }
+
+      .smart-zip-label {
+        display: block;
+        margin-bottom: 6px;
+        font-weight: 800;
+      }
+
+      .smart-zip-input {
+        width: 100%;
+        min-height: 50px;
+        padding: 14px 12px;
+        border: 1px solid #d0d7de;
+        border-radius: 12px;
+        background: #fff;
+        color: #111827;
+        font-size: 17px;
+        text-transform: uppercase;
+      }
+
+      .smart-zip-help {
+        margin-top: 6px;
+        color: #64748b;
+        font-size: 12px;
+        line-height: 1.4;
+      }
+
       @media (max-width: 1100px) {
         .smart-main-grid {
           grid-template-columns: 1fr !important;
@@ -59,6 +88,79 @@
 
         if (!containsShippingResults) return filtered;
         return nativeArrayFilter.call(filtered, (item) => item?.name !== "UPS Standard");
+      };
+
+      const forcePriceRefresh = () => {
+        const weightInput = document.querySelector('input[placeholder="kg"]');
+        if (weightInput) weightInput.dispatchEvent(new Event("input", { bubbles: true }));
+      };
+
+      const ensureZipField = () => {
+        const select = document.querySelector("select");
+        if (!(select instanceof HTMLSelectElement)) return;
+
+        const countryBlock = select.parentElement;
+        if (!countryBlock) return;
+
+        let wrapper = countryBlock.querySelector(':scope > [data-smart-zip="true"]');
+        if (!(wrapper instanceof HTMLElement)) {
+          wrapper = document.createElement("div");
+          wrapper.dataset.smartZip = "true";
+          wrapper.className = "smart-zip-wrap";
+
+          const label = document.createElement("label");
+          label.className = "smart-zip-label";
+          label.htmlFor = "dhl-zip-code";
+
+          const input = document.createElement("input");
+          input.id = "dhl-zip-code";
+          input.className = "smart-zip-input";
+          input.type = "text";
+          input.inputMode = "text";
+          input.autocomplete = "postal-code";
+          input.maxLength = 12;
+          input.placeholder = "e.g. 1001";
+          input.setAttribute("aria-label", "ZIP Code");
+
+          const help = document.createElement("div");
+          help.className = "smart-zip-help";
+
+          input.addEventListener("input", () => {
+            const normalized = input.value.toUpperCase().replace(/[^A-Z0-9 -]/g, "");
+            if (normalized !== input.value) input.value = normalized;
+            forcePriceRefresh();
+          });
+
+          wrapper.append(label, input, help);
+          select.insertAdjacentElement("afterend", wrapper);
+        }
+
+        const countryLabel = countryBlock.querySelector("label")?.textContent?.trim() ?? "";
+        const inbound = countryLabel.includes("Origin") || countryLabel.includes("origjinës");
+        const albanian = countryLabel.includes("Shteti");
+        const domestic = !inbound && select.value === "AL";
+        wrapper.hidden = domestic;
+
+        const zipLabel = wrapper.querySelector(".smart-zip-label");
+        const zipHelp = wrapper.querySelector(".smart-zip-help");
+        const nextLabel = inbound
+          ? (albanian ? "Kodi postar i marrjes" : "Pickup ZIP Code")
+          : (albanian ? "Kodi postar i destinacionit" : "Destination ZIP Code");
+        const nextHelp = albanian
+          ? "Përdoret për kontrollin automatik të zonës së largët DHL."
+          : "Used for automatic DHL remote-area checking.";
+
+        if (zipLabel && zipLabel.textContent !== nextLabel) zipLabel.textContent = nextLabel;
+        if (zipHelp && zipHelp.textContent !== nextHelp) zipHelp.textContent = nextHelp;
+
+        if (select.dataset.smartZipBound !== "true") {
+          select.dataset.smartZipBound = "true";
+          select.addEventListener("change", () => {
+            const input = document.getElementById("dhl-zip-code");
+            if (input instanceof HTMLInputElement) input.value = "";
+            forcePriceRefresh();
+          });
+        }
       };
 
       const polishResultCards = () => {
@@ -141,6 +243,7 @@
           }
         });
 
+        ensureZipField();
         polishResultCards();
       };
 
