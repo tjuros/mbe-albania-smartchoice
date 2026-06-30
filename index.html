@@ -17,23 +17,58 @@
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+
     <script>
-      const updateMbeDescription = () => {
+      const nativeArrayFilter = Array.prototype.filter;
+
+      Array.prototype.filter = function (callback, thisArg) {
+        const filtered = nativeArrayFilter.call(this, callback, thisArg);
+        const containsShippingResults = filtered.some(
+          (item) => item && typeof item === "object" && "serviceType" in item && "name" in item,
+        );
+
+        if (!containsShippingResults) return filtered;
+        return nativeArrayFilter.call(filtered, (item) => item?.name !== "UPS Standard");
+      };
+
+      const updateSmartChoiceUi = () => {
         document.querySelectorAll("div, p, span").forEach((element) => {
           if (element.textContent?.trim() === "Mail Boxes Etc. Albania") {
             element.textContent = "MBE Albania";
           }
         });
+
+        document.querySelectorAll("details").forEach((section) => {
+          const summary = section.querySelector(":scope > summary");
+          const label = summary?.textContent?.toLowerCase() ?? "";
+
+          if (label.includes("economy")) {
+            section.style.background = "#f0fdf4";
+            section.style.border = "1px solid #bbf7d0";
+            section.style.boxShadow = "0 1px 2px rgba(22,163,74,.06)";
+            if (summary instanceof HTMLElement) summary.style.color = "#166534";
+          }
+
+          if (label.includes("express")) {
+            section.style.background = "#fff1f2";
+            section.style.border = "1px solid #fecdd3";
+            section.style.boxShadow = "0 1px 2px rgba(220,38,38,.06)";
+            if (summary instanceof HTMLElement) summary.style.color = "#9f1239";
+          }
+        });
       };
 
-      new MutationObserver(updateMbeDescription).observe(document.documentElement, {
+      new MutationObserver(updateSmartChoiceUi).observe(document.documentElement, {
         childList: true,
         subtree: true,
         characterData: true,
       });
+    </script>
 
-      updateMbeDescription();
+    <script type="module" src="/src/main.tsx"></script>
+
+    <script>
+      updateSmartChoiceUi();
     </script>
   </body>
 </html>
