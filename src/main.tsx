@@ -167,37 +167,31 @@ function setButtonContent(button: HTMLButtonElement, icon: string, label: string
   button.style.fontSize = compact ? "14px" : "16px";
 }
 
-function applyLogo() {
-  const logoContainer = Array.from(document.querySelectorAll<HTMLElement>("div")).find(
+function applyBrandText() {
+  const brandContainer = Array.from(document.querySelectorAll<HTMLElement>("div")).find(
     (element) =>
       element.textContent?.trim() === "MAIL BOXES ETC." &&
       (element.style.borderRadius === "999px" || element.style.minHeight === "34px"),
   );
 
-  if (!logoContainer) return;
+  if (!brandContainer) return;
 
-  if (!logoContainer.querySelector("img")) {
-    const logo = document.createElement("img");
-    logo.src = "/mbe-logo.svg";
-    logo.alt = "Mail Boxes Etc. #PeoplePossible";
-    logo.loading = "eager";
-    logo.style.display = "block";
-    logo.style.width = "clamp(118px, 22vw, 158px)";
-    logo.style.height = "auto";
-    logo.style.maxHeight = "76px";
-    logo.style.objectFit = "contain";
-    logoContainer.replaceChildren(logo);
-  }
+  brandContainer.textContent = "Mail Boxes Etc.";
+  brandContainer.style.padding = "0";
+  brandContainer.style.minHeight = "0";
+  brandContainer.style.background = "transparent";
+  brandContainer.style.border = "0";
+  brandContainer.style.borderRadius = "0";
+  brandContainer.style.boxShadow = "none";
+  brandContainer.style.color = "#111111";
+  brandContainer.style.fontSize = "clamp(18px, 4vw, 26px)";
+  brandContainer.style.fontWeight = "900";
+  brandContainer.style.letterSpacing = "-0.02em";
+  brandContainer.style.lineHeight = "1.1";
+  brandContainer.style.whiteSpace = "nowrap";
+  brandContainer.style.flex = "0 0 auto";
 
-  logoContainer.style.padding = "0";
-  logoContainer.style.minHeight = "0";
-  logoContainer.style.background = "transparent";
-  logoContainer.style.border = "0";
-  logoContainer.style.borderRadius = "0";
-  logoContainer.style.boxShadow = "none";
-  logoContainer.style.flex = "0 0 auto";
-
-  const titleRow = logoContainer.parentElement;
+  const titleRow = brandContainer.parentElement;
   if (titleRow) {
     titleRow.style.alignItems = "center";
     titleRow.style.gap = "12px";
@@ -292,7 +286,7 @@ function scheduleApply() {
 
   requestAnimationFrame(() => {
     applyScheduled = false;
-    applyLogo();
+    applyBrandText();
     applyShipmentControls();
     applyCarrierStyles();
   });
