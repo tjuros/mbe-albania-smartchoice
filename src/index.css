@@ -35,3 +35,11 @@ button {
 summary::-webkit-details-marker {
   display: none;
 }
+
+.smart-zip-help {
+  display: none !important;
+}
+
+[data-smart-zip="true"] {
+  display: block !important;
+}
