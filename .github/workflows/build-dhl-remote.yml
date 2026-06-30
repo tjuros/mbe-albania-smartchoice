@@ -6,7 +6,7 @@ on:
     branches:
       - dhl-remote-live
     paths:
-      - scripts/build_dhl_remote.py
+      - src/remoteData/part4.ts
       - .github/workflows/build-dhl-remote.yml
 
 permissions:
@@ -21,8 +21,15 @@ jobs:
           ref: dhl-remote-live
       - name: Install PDF tools
         run: sudo apt-get update && sudo apt-get install -y poppler-utils
+      - name: Download official DHL 2026 list
+        run: |
+          curl -L --retry 3 --fail --user-agent "Mozilla/5.0" \
+            "https://mydhl.express.dhl/content/dam/downloads/g0/remote-areas/dhl_express_remote_areas_en.pdf.coredownload.pdf" \
+            -o /tmp/dhl-remote.pdf
       - name: Build database
-        run: python scripts/build_dhl_remote.py
+        run: |
+          base64 --decode src/remoteData/part4.ts > /tmp/build_dhl_remote.py
+          python /tmp/build_dhl_remote.py /tmp/dhl-remote.pdf
       - name: Commit database
         run: |
           git config user.name "github-actions[bot]"
