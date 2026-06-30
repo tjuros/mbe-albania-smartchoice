@@ -178,13 +178,13 @@ function applyLogo() {
 
   if (!logoContainer.querySelector("img")) {
     const logo = document.createElement("img");
-    logo.src = "https://www.mbe.hr/wp-content/uploads/2020/04/mbe-logo.png";
-    logo.alt = "Mail Boxes Etc.";
+    logo.src = "/mbe-logo.svg";
+    logo.alt = "Mail Boxes Etc. #PeoplePossible";
     logo.loading = "eager";
     logo.style.display = "block";
-    logo.style.width = "clamp(92px, 18vw, 122px)";
+    logo.style.width = "clamp(118px, 22vw, 158px)";
     logo.style.height = "auto";
-    logo.style.maxHeight = "42px";
+    logo.style.maxHeight = "76px";
     logo.style.objectFit = "contain";
     logoContainer.replaceChildren(logo);
   }
@@ -195,6 +195,7 @@ function applyLogo() {
   logoContainer.style.border = "0";
   logoContainer.style.borderRadius = "0";
   logoContainer.style.boxShadow = "none";
+  logoContainer.style.flex = "0 0 auto";
 
   const titleRow = logoContainer.parentElement;
   if (titleRow) {
