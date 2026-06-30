@@ -4,10 +4,27 @@ import "./dhlRuntime";
 import App from "./App";
 import "./index.css";
 
-// Official Bank of Albania reference rate, 30 June 2026.
-const EUR_TO_ALL = 94.14;
+// Live EUR/ALL reference rate checked on 30 June 2026.
+const EUR_TO_ALL = 93.9135;
 let currentDirection: "outbound" | "inbound" = "outbound";
 let currentCountry = "AL";
+
+const COUNTRY_FLAGS: Record<string, string> = {
+  AL: "🇦🇱",
+  IT: "🇮🇹",
+  GR: "🇬🇷",
+  HR: "🇭🇷",
+  DE: "🇩🇪",
+  AT: "🇦🇹",
+  FR: "🇫🇷",
+  ES: "🇪🇸",
+  GB: "🇬🇧",
+  US: "🇺🇸",
+  CA: "🇨🇦",
+  AE: "🇦🇪",
+  CN: "🇨🇳",
+  AU: "🇦🇺",
+};
 
 const NativeNumberFormat = Intl.NumberFormat;
 const eurFormatter = new NativeNumberFormat("en-IE", {
@@ -34,7 +51,7 @@ const SmartNumberFormat = function (
       const isDomestic = currentDirection === "outbound" && currentCountry === "AL";
 
       if (isDomestic) return `${valueInAll} ALL`;
-      return `${eurFormatter.format(numericValue)} · ≈ ${valueInALL(valueInAll)}`;
+      return `${eurFormatter.format(numericValue)} · ≈ ${valueInAll} ALL`;
     },
     formatToParts(value: number | bigint) {
       return nativeFormatter.formatToParts(value);
@@ -44,10 +61,6 @@ const SmartNumberFormat = function (
     },
   } as Intl.NumberFormat;
 } as unknown as typeof Intl.NumberFormat;
-
-function valueInALL(value: string) {
-  return `${value} ALL`;
-}
 
 SmartNumberFormat.supportedLocalesOf = NativeNumberFormat.supportedLocalesOf.bind(NativeNumberFormat);
 (Intl as unknown as { NumberFormat: typeof Intl.NumberFormat }).NumberFormat = SmartNumberFormat;
@@ -262,6 +275,18 @@ function applyShipmentControls() {
   }
 }
 
+function applyCountryFlags() {
+  document.querySelectorAll<HTMLSelectElement>("select").forEach((select) => {
+    select.querySelectorAll<HTMLOptionElement>("option").forEach((option) => {
+      const flag = COUNTRY_FLAGS[option.value];
+      if (!flag) return;
+
+      const cleanLabel = option.textContent?.replace(/^\p{Regional_Indicator}{2}\s+/u, "") ?? option.value;
+      option.textContent = `${flag} ${cleanLabel}`;
+    });
+  });
+}
+
 function applyCarrierStyles() {
   document.querySelectorAll<HTMLElement>("div").forEach((element) => {
     const carrierName = element.textContent?.trim() ?? "";
@@ -325,6 +350,7 @@ function scheduleApply() {
     applyScheduled = false;
     applyBrandText();
     applyShipmentControls();
+    applyCountryFlags();
     applyCarrierStyles();
     applyResultStatusStyles();
   });
