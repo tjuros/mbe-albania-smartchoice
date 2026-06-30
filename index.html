@@ -13,6 +13,36 @@
       button { touch-action: manipulation; }
       #root { min-height: 100vh; }
       summary::-webkit-details-marker { display: none; }
+
+      .smart-hidden-available,
+      .smart-hidden-duplicate {
+        display: none !important;
+      }
+
+      .smart-unavailable {
+        background: #e5e7eb !important;
+        color: #475569 !important;
+        border: 1px solid #cbd5e1 !important;
+      }
+
+      .smart-unavailable-card {
+        background: #f8fafc !important;
+        border-color: #d1d5db !important;
+        box-shadow: none !important;
+      }
+
+      .smart-dhl-pill {
+        max-width: 100% !important;
+        white-space: normal !important;
+        text-align: center !important;
+        line-height: 1.2 !important;
+      }
+
+      @media (max-width: 1100px) {
+        .smart-main-grid {
+          grid-template-columns: 1fr !important;
+        }
+      }
     </style>
   </head>
   <body>
@@ -29,6 +59,60 @@
 
         if (!containsShippingResults) return filtered;
         return nativeArrayFilter.call(filtered, (item) => item?.name !== "UPS Standard");
+      };
+
+      const polishResultCards = () => {
+        document.querySelectorAll("div").forEach((element) => {
+          if (element.style.gridTemplateColumns === "1.05fr 0.95fr") {
+            element.classList.add("smart-main-grid");
+          }
+        });
+
+        const dhlNames = new Set(["DHL Express Worldwide", "DHL Economy Select"]);
+
+        document.querySelectorAll("div").forEach((element) => {
+          const text = element.textContent?.trim() ?? "";
+          if (!dhlNames.has(text)) return;
+
+          const isPill = element.style.borderRadius === "999px" || element.style.minHeight === "34px";
+          if (!isPill) return;
+
+          element.classList.add("smart-dhl-pill");
+
+          const parent = element.parentElement;
+          if (!parent) return;
+
+          Array.from(parent.children).forEach((sibling) => {
+            if (sibling !== element && sibling.textContent?.trim() === text) {
+              sibling.classList.add("smart-hidden-duplicate");
+            }
+          });
+        });
+
+        const availableLabels = new Set(["Available", "E disponueshme"]);
+        const unavailableLabels = new Set(["Unavailable", "E padisponueshme"]);
+
+        document.querySelectorAll("span").forEach((badge) => {
+          const label = badge.textContent?.trim() ?? "";
+
+          if (availableLabels.has(label)) {
+            badge.classList.add("smart-hidden-available");
+            return;
+          }
+
+          if (!unavailableLabels.has(label)) return;
+
+          badge.classList.add("smart-unavailable");
+
+          const badgeRow = badge.parentElement;
+          const contentColumn = badgeRow?.parentElement;
+          const row = contentColumn?.parentElement;
+          const card = row?.parentElement;
+
+          if (card instanceof HTMLElement) {
+            card.classList.add("smart-unavailable-card");
+          }
+        });
       };
 
       const updateSmartChoiceUi = () => {
@@ -56,6 +140,8 @@
             if (summary instanceof HTMLElement) summary.style.color = "#9f1239";
           }
         });
+
+        polishResultCards();
       };
 
       new MutationObserver(updateSmartChoiceUi).observe(document.documentElement, {
@@ -69,6 +155,7 @@
 
     <script>
       updateSmartChoiceUi();
+      window.addEventListener("resize", polishResultCards);
     </script>
   </body>
 </html>
