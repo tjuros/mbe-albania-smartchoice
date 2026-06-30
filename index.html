@@ -38,6 +38,27 @@
         line-height: 1.2 !important;
       }
 
+      .smart-shipment-summary {
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important;
+        color: #ffffff !important;
+        border: 1px solid #334155 !important;
+        box-shadow: 0 14px 34px rgba(15, 23, 42, .24) !important;
+      }
+
+      .smart-shipment-summary > summary,
+      .smart-shipment-summary > summary span,
+      .smart-shipment-summary strong {
+        color: #ffffff !important;
+      }
+
+      .smart-shipment-summary > div {
+        color: #cbd5e1 !important;
+      }
+
+      .smart-shipment-summary > summary {
+        padding: 2px 0 !important;
+      }
+
       .smart-zip-wrap {
         margin-top: 12px;
       }
@@ -167,6 +188,14 @@
         document.querySelectorAll("div").forEach((element) => {
           if (element.style.gridTemplateColumns === "1.05fr 0.95fr") {
             element.classList.add("smart-main-grid");
+          }
+        });
+
+        document.querySelectorAll("details").forEach((section) => {
+          const footer = section.parentElement?.parentElement;
+          if (!(footer instanceof HTMLElement)) return;
+          if (footer.style.position === "fixed" || footer.style.position === "sticky") {
+            section.classList.add("smart-shipment-summary");
           }
         });
 
