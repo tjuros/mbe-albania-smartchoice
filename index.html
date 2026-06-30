@@ -286,6 +286,44 @@
     <script type="module" src="/src/main.tsx"></script>
 
     <script>
+      window.addEventListener("load", () => {
+        const ExistingNumberFormat = Intl.NumberFormat;
+        const EUR_TO_ALL = 93.9135;
+
+        const FixedNumberFormat = function (locales, options) {
+          const fallback = new ExistingNumberFormat(locales, options);
+          const isEuroPrice = options?.style === "currency" && options?.currency === "EUR";
+
+          if (!isEuroPrice) return fallback;
+
+          return {
+            format(value) {
+              const numericValue = Number(value);
+              const selectedCountry = document.querySelector("select")?.value ?? "AL";
+              const allValue = Math.round(numericValue * EUR_TO_ALL).toLocaleString("en-US");
+
+              if (selectedCountry === "AL") return `${allValue} ALL`;
+
+              const euroValue = numericValue.toLocaleString("en-IE", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              });
+              return `€${euroValue} · ≈ ${allValue} ALL`;
+            },
+            formatToParts(value) {
+              return [{ type: "literal", value: this.format(value) }];
+            },
+            resolvedOptions() {
+              return fallback.resolvedOptions();
+            },
+          };
+        };
+
+        FixedNumberFormat.supportedLocalesOf = ExistingNumberFormat.supportedLocalesOf.bind(ExistingNumberFormat);
+        Intl.NumberFormat = FixedNumberFormat;
+        forcePriceRefresh();
+      });
+
       updateSmartChoiceUi();
       window.addEventListener("resize", polishResultCards);
     </script>
