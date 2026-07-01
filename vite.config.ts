@@ -20,7 +20,14 @@ function enablePricingRuntimes(): Plugin {
 
         transformed = transformed.replace(
           /<select value=\{countryCode\} onChange=\{\(event\) => setCountryCode\(event\.target\.value\)\} style=\{inputStyle\(\)\}>[\s\S]*?<\/select>/,
-          `<SearchableCountrySelect\n                  value={countryCode}\n                  onChange={setCountryCode}\n                  countries={COUNTRIES}\n                  language={language}\n                  direction={direction}\n                  style={inputStyle()}\n                />`,
+          `<SearchableCountrySelect
+                  value={countryCode}
+                  onChange={setCountryCode}
+                  countries={COUNTRIES}
+                  language={language}
+                  direction={direction}
+                  style={inputStyle()}
+                />`,
         );
 
         transformed = transformed.replace(
@@ -53,6 +60,13 @@ function enablePricingRuntimes(): Plugin {
         transformed = transformed.replace(
           'import "./remoteRuntime";',
           'import "./remoteRuntime";\nimport "./eliteRuntime";',
+        );
+      }
+
+      if (!transformed.includes('import "./ultraRuntime";')) {
+        transformed = transformed.replace(
+          'import "./eliteRuntime";',
+          'import "./eliteRuntime";\nimport "./ultraRuntime";',
         );
       }
 
