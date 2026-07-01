@@ -6,6 +6,38 @@ function enablePricingRuntimes(): Plugin {
     name: "enable-pricing-runtimes",
     enforce: "pre",
     transform(code, id) {
+      if (id.endsWith("/src/App.tsx")) {
+        let transformed = code;
+
+        if (!transformed.includes('from "./countries"')) {
+          transformed = `import { ALL_COUNTRIES, SearchableCountrySelect } from "./countries";\n${transformed}`;
+        }
+
+        transformed = transformed.replace(
+          /const COUNTRIES: Country\[\] = \[[\s\S]*?\n\];/,
+          "const COUNTRIES: Country[] = ALL_COUNTRIES;",
+        );
+
+        transformed = transformed.replace(
+          /<select value=\{countryCode\} onChange=\{\(event\) => setCountryCode\(event\.target\.value\)\} style=\{inputStyle\(\)\}>[\s\S]*?<\/select>/,
+          `<SearchableCountrySelect\n                  value={countryCode}\n                  onChange={setCountryCode}\n                  countries={COUNTRIES}\n                  language={language}\n                  direction={direction}\n                  style={inputStyle()}\n                />`,
+        );
+
+        transformed = transformed.replace(
+          `): PriceResult[] {\n  if (shipmentType === "documents" && chargeable > 5) {`,
+          `): PriceResult[] {\n  if (zone < 0) {\n    const reason = languageUnavailableReason(copy);\n    return [\n      fail("Posta Shqiptare (EMS)", "MBE Economy", [reason]),\n      fail("DHL Standard", "MBE Economy", [reason]),\n      fail("UPS Standard", "MBE Economy", [reason]),\n      fail("DHL Express", "MBE Express", [reason]),\n      fail("UPS Express", "MBE Express", [reason]),\n      fail("FedEx", "MBE Express", [reason]),\n    ];\n  }\n\n  if (shipmentType === "documents" && chargeable > 5) {`,
+        );
+
+        if (!transformed.includes("function languageUnavailableReason")) {
+          transformed = transformed.replace(
+            "function calculateInternational(",
+            `function languageUnavailableReason(copy: (typeof COPY)[Language]) {\n  return copy.unavailable === "Unavailable"\n    ? "Tariff not configured for this country yet."\n    : "Tarifa për këtë shtet nuk është konfiguruar ende.";\n}\n\nfunction calculateInternational(`,
+          );
+        }
+
+        return transformed === code ? null : transformed;
+      }
+
       if (!id.endsWith("/src/main.tsx")) return null;
 
       let transformed = code;
