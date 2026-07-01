@@ -22,6 +22,7 @@ const ECONOMY_FUEL_RATE = 0.3;
 const EXPRESS_FUEL_RATE = 0.4725;
 const CA_LETTERS = "ABCEGHJKLMNPRSTVWXYZ";
 const CA_RADICES = [20, 10, 20, 10, 20, 10];
+const NOT_CHECKED_WARNING = "Remote area not checked";
 
 let database: RemoteDatabase | null = null;
 let databaseFailed = false;
@@ -35,6 +36,11 @@ const euro = (value: number) => `€${value.toFixed(2)}`;
 
 function isRuntimeResult(value: unknown): value is RuntimeResult {
   return !!value && typeof value === "object" && "name" in value && "serviceType" in value && "details" in value;
+}
+
+function isDhlResult(result: RuntimeResult) {
+  return result.name === "DHL Economy Select" || result.name === "DHL Standard" ||
+    result.name === "DHL Express Worldwide" || result.name === "DHL Express";
 }
 
 function inRanges(value: number, ranges: [number, number][]) {
@@ -87,15 +93,21 @@ function getChargeableWeight(result: RuntimeResult) {
 }
 
 function applyRemote(results: RuntimeResult[]) {
-  const zip = currentZip || normalizeZip((document.getElementById("dhl-zip-code") as HTMLInputElement | null)?.value ?? "");
-  if (!database || databaseFailed || !zip || !isRemote(currentCountry, zip)) return;
+  const input = document.getElementById("dhl-zip-code") as HTMLInputElement | null;
+  const zip = currentZip || normalizeZip(input?.value ?? "");
 
   for (const result of results) {
-    const isEconomy = result.name === "DHL Economy Select" || result.name === "DHL Standard";
-    const isExpress = result.name === "DHL Express Worldwide" || result.name === "DHL Express";
-    if ((!isEconomy && !isExpress) || !result.possible || result.price === null) continue;
+    if (!isDhlResult(result) || !result.possible || result.price === null) continue;
+
+    if (!zip) {
+      if (!result.warning) result.warning = NOT_CHECKED_WARNING;
+      continue;
+    }
+    if (result.warning === NOT_CHECKED_WARNING) result.warning = undefined;
+    if (!database || databaseFailed || !isRemote(currentCountry, zip)) continue;
     if (result.details.some((detail) => detail.startsWith("DHL remote area"))) continue;
 
+    const isEconomy = result.name === "DHL Economy Select" || result.name === "DHL Standard";
     const weight = getChargeableWeight(result);
     const remoteFee = round2(Math.max(REMOTE_MINIMUM_EUR, weight * REMOTE_RATE_PER_KG));
     const fuelRate = isEconomy ? ECONOMY_FUEL_RATE : EXPRESS_FUEL_RATE;
@@ -118,14 +130,27 @@ function triggerRecalculation() {
   input.dispatchEvent(new Event("input", { bubbles: true }));
 }
 
+function neutralizeZipUi() {
+  const input = document.getElementById("dhl-zip-code") as HTMLInputElement | null;
+  const wrapper = input?.closest<HTMLElement>(".smart-zip-field");
+  if (!wrapper) return;
+  if (wrapper.hidden) wrapper.hidden = false;
+
+  const help = wrapper.querySelector<HTMLElement>(".smart-zip-help");
+  if (!help) return;
+  const albanian = document.documentElement.lang === "sq" || document.body.textContent?.includes("Rivendos");
+  const text = albanian
+    ? "Përdoret për kontrollin e itinerarit, zonës dhe tarifave shtesë."
+    : "Used for route, zone and surcharge checks.";
+  if (help.textContent !== text) help.textContent = text;
+}
+
 async function loadDatabase() {
   try {
-    const response = await fetch("/dhl-remote-2026.json.gz", { cache: "force-cache" });
+    const response = await fetch("/dhl-remote-2026.json", { cache: "force-cache" });
     if (!response.ok) throw new Error(`Remote database HTTP ${response.status}`);
-    if (!("DecompressionStream" in window)) throw new Error("Gzip decompression is not supported");
-    const stream = response.body?.pipeThrough(new DecompressionStream("gzip"));
-    if (!stream) throw new Error("Remote database stream is unavailable");
-    database = JSON.parse(await new Response(stream).text()) as RemoteDatabase;
+    database = await response.json() as RemoteDatabase;
+    databaseFailed = false;
     triggerRecalculation();
   } catch (error) {
     databaseFailed = true;
@@ -173,4 +198,13 @@ const remoteFilter = function <T>(
 };
 Array.prototype.filter = remoteFilter as typeof Array.prototype.filter;
 
+const zipUiObserver = new MutationObserver(neutralizeZipUi);
+zipUiObserver.observe(document.documentElement, {
+  childList: true,
+  subtree: true,
+  characterData: true,
+  attributes: true,
+  attributeFilter: ["hidden"],
+});
+queueMicrotask(neutralizeZipUi);
 void loadDatabase();
