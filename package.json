@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "build": "vite build"
+    "build": "python3 -m pip install --disable-pip-version-check --quiet pypdf==5.9.0 && python3 scripts/build_dhl_remote.py && vite build"
   },
   "dependencies": {
     "react": "^18.2.0",
