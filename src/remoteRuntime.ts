@@ -16,6 +16,11 @@ type RemoteDatabase = {
   GB: [string, string][];
 };
 
+type DataPart = {
+  path: string;
+  encoding: "base64" | "hex" | "decimal";
+};
+
 const REMOTE_RATE_PER_KG = 0.5;
 const REMOTE_MINIMUM_EUR = 24;
 const ECONOMY_FUEL_RATE = 0.3;
@@ -23,6 +28,19 @@ const EXPRESS_FUEL_RATE = 0.4725;
 const CA_LETTERS = "ABCEGHJKLMNPRSTVWXYZ";
 const CA_RADICES = [20, 10, 20, 10, 20, 10];
 const NOT_CHECKED_WARNING = "Remote area not checked";
+
+const DATA_PARTS: DataPart[] = [
+  ...Array.from({ length: 12 }, (_, index) => ({
+    path: `/remote/dhl-compact-${String(index + 1).padStart(2, "0")}.b64`,
+    encoding: "base64" as const,
+  })),
+  { path: "/remote/dhl-compact-13-1.hex", encoding: "hex" },
+  { path: "/remote/dhl-compact-13-2.hex", encoding: "hex" },
+  { path: "/remote/dhl-compact-13-3.hex", encoding: "hex" },
+  { path: "/remote/dhl-compact-13-4.hex", encoding: "hex" },
+  { path: "/remote/dhl-compact-14-1.hex", encoding: "hex" },
+  { path: "/remote/dhl-compact-14-2.dec", encoding: "decimal" },
+];
 
 let database: RemoteDatabase | null = null;
 let databaseFailed = false;
@@ -145,11 +163,102 @@ function neutralizeZipUi() {
   if (help.textContent !== text) help.textContent = text;
 }
 
+function decodeBase64(value: string) {
+  const binary = atob(value.replace(/\s+/g, ""));
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+  return bytes;
+}
+
+function decodeHex(value: string) {
+  const clean = value.replace(/\s+/g, "");
+  if (clean.length % 2 !== 0) throw new Error("Invalid hexadecimal remote-data part");
+  const bytes = new Uint8Array(clean.length / 2);
+  for (let index = 0; index < bytes.length; index += 1) {
+    bytes[index] = Number.parseInt(clean.slice(index * 2, index * 2 + 2), 16);
+  }
+  return bytes;
+}
+
+function decodeDecimal(value: string) {
+  const values = value.split(",").map((item) => item.trim()).filter(Boolean).map(Number);
+  if (values.some((item) => !Number.isInteger(item) || item < 0 || item > 255)) {
+    throw new Error("Invalid decimal remote-data part");
+  }
+  return Uint8Array.from(values);
+}
+
+function decodeRanges(payload: string): [number, number][] {
+  let previousEnd = -1;
+  return payload.split(",").filter(Boolean).map((token) => {
+    const [deltaRaw, spanRaw] = token.split(".");
+    const delta = Number.parseInt(deltaRaw, 36);
+    const span = spanRaw ? Number.parseInt(spanRaw, 36) : 0;
+    if (!Number.isFinite(delta) || !Number.isFinite(span)) throw new Error("Invalid remote range");
+    const start = previousEnd + 1 + delta;
+    const end = start + span;
+    previousEnd = end;
+    return [start, end];
+  });
+}
+
+function parseDatabase(text: string): RemoteDatabase {
+  const parsed: RemoteDatabase = { version: "2026-01-04", numeric: {}, CA: [], GB: [] };
+
+  for (const line of text.trim().split("\n")) {
+    const firstSeparator = line.indexOf("|");
+    const secondSeparator = line.indexOf("|", firstSeparator + 1);
+    if (firstSeparator < 0 || secondSeparator < 0) continue;
+
+    const country = line.slice(0, firstSeparator);
+    const length = Number(line.slice(firstSeparator + 1, secondSeparator));
+    const payload = line.slice(secondSeparator + 1);
+
+    if (country === "GB") {
+      parsed.GB = payload.split(",").filter(Boolean).map((item) => {
+        const separator = item.indexOf("-");
+        return separator < 0
+          ? [item, item]
+          : [item.slice(0, separator), item.slice(separator + 1)];
+      });
+      continue;
+    }
+
+    const ranges = decodeRanges(payload);
+    if (country === "CA") parsed.CA = ranges;
+    else parsed.numeric[country] = { length, ranges };
+  }
+
+  if (!parsed.numeric.HR?.ranges.length || !parsed.numeric.IT?.ranges.length || !parsed.CA.length || !parsed.GB.length) {
+    throw new Error("DHL remote database is incomplete");
+  }
+  return parsed;
+}
+
+async function fetchDataPart(part: DataPart) {
+  const response = await fetch(part.path, { cache: "force-cache" });
+  if (!response.ok) throw new Error(`${part.path} HTTP ${response.status}`);
+  const text = await response.text();
+  if (part.encoding === "base64") return decodeBase64(text);
+  if (part.encoding === "hex") return decodeHex(text);
+  return decodeDecimal(text);
+}
+
 async function loadDatabase() {
   try {
-    const response = await fetch("/dhl-remote-2026.json", { cache: "force-cache" });
-    if (!response.ok) throw new Error(`Remote database HTTP ${response.status}`);
-    database = await response.json() as RemoteDatabase;
+    const parts = await Promise.all(DATA_PARTS.map(fetchDataPart));
+    const totalLength = parts.reduce((sum, part) => sum + part.length, 0);
+    const compressed = new Uint8Array(totalLength);
+    let offset = 0;
+    for (const part of parts) {
+      compressed.set(part, offset);
+      offset += part.length;
+    }
+
+    if (!("DecompressionStream" in window)) throw new Error("Gzip decompression is not supported");
+    const compressedBuffer = compressed.buffer.slice(0) as ArrayBuffer;
+    const stream = new Blob([compressedBuffer]).stream().pipeThrough(new DecompressionStream("gzip"));
+    database = parseDatabase(await new Response(stream).text());
     databaseFailed = false;
     triggerRecalculation();
   } catch (error) {
