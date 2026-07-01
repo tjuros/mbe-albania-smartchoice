@@ -111,6 +111,34 @@ def obtain_pdf() -> Path:
     return target
 
 
+def patch_app_files(root: Path) -> None:
+    main_path = root / "src" / "main.tsx"
+    main_source = main_path.read_text(encoding="utf-8")
+    if 'import "./remoteRuntime";' not in main_source:
+        main_source = main_source.replace(
+            'import "./dhlRuntime";',
+            'import "./dhlRuntime";\nimport "./remoteRuntime";',
+            1,
+        )
+        main_path.write_text(main_source, encoding="utf-8")
+
+    index_path = root / "index.html"
+    index_source = index_path.read_text(encoding="utf-8")
+    index_source = index_source.replace(
+        '        const domestic = !inbound && select.value === "AL";\n        wrapper.hidden = domestic;',
+        '        wrapper.hidden = false;',
+    )
+    index_source = index_source.replace(
+        'Përdoret për kontrollin automatik të zonës së largët DHL.',
+        'Përdoret për kontrollin e itinerarit, zonës dhe tarifave shtesë.',
+    )
+    index_source = index_source.replace(
+        'Used for automatic DHL remote-area checking.',
+        'Used for route, zone and surcharge checks.',
+    )
+    index_path.write_text(index_source, encoding="utf-8")
+
+
 def main() -> None:
     root = Path(__file__).resolve().parents[1]
     output = root / "public" / "dhl-remote-2026.json.gz"
@@ -122,6 +150,7 @@ def main() -> None:
         raise RuntimeError("Missing DHL remote data: " + ", ".join(missing))
     payload = json.dumps(data, separators=(",", ":")).encode()
     output.write_bytes(gzip.compress(payload, compresslevel=9, mtime=0))
+    patch_app_files(root)
     print(f"Built {output} ({output.stat().st_size} bytes)")
 
 
