@@ -4,9 +4,10 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "build": "python3 -m pip install --disable-pip-version-check --quiet pypdf==5.9.0 && python3 scripts/build_dhl_remote.py && vite build"
+    "build": "node scripts/build-dhl-remote.mjs && vite build"
   },
   "dependencies": {
+    "pdfjs-dist": "4.10.38",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
