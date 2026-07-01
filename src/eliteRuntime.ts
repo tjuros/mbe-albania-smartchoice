@@ -58,7 +58,10 @@ function chargeableWeight(result: EliteRuntimeResult) {
 
 function applyEliteOffer(results: EliteRuntimeResult[]) {
   const result = results.find((item) => item.name === "Elite Post");
-  if (!result || result.details.some((detail) => detail.startsWith(ELITE_MARKER))) return;
+  if (!result) return;
+
+  result.serviceType = "MBE Express";
+  if (result.details.some((detail) => detail.startsWith(ELITE_MARKER))) return;
 
   const albanian = isAlbanian();
   const actualWeight = inputValues("kg").reduce((sum, value) => sum + value, 0);
@@ -155,9 +158,8 @@ const eliteFilter = function <T>(
   callbackfn: (value: T, index: number, array: T[]) => unknown,
   thisArg?: unknown,
 ): T[] {
-  const filtered = previousFilter.call(this, callbackfn, thisArg);
   if (this.some(isRuntimeResult)) applyEliteOffer(this as unknown as EliteRuntimeResult[]);
-  return filtered;
+  return previousFilter.call(this, callbackfn, thisArg);
 };
 Array.prototype.filter = eliteFilter as typeof Array.prototype.filter;
 
