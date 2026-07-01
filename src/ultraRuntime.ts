@@ -232,19 +232,21 @@ function updateAreaButtons(wrapper: HTMLElement) {
   const albanian = isAlbanian();
   const title = wrapper.querySelector<HTMLElement>("[data-ultra-area-title]");
   const help = wrapper.querySelector<HTMLElement>("[data-ultra-area-help]");
-  if (title) title.textContent = albanian ? "Zona e dorëzimit ULTRA" : "ULTRA delivery area";
-  if (help) {
-    help.textContent = albanian
-      ? "Kërkohet për çmimin dhe afatin e saktë të dorëzimit."
-      : "Required for the exact price and delivery time.";
-  }
+  const nextTitle = albanian ? "Zona e dorëzimit ULTRA" : "ULTRA delivery area";
+  const nextHelp = albanian
+    ? "Kërkohet për çmimin dhe afatin e saktë të dorëzimit."
+    : "Required for the exact price and delivery time.";
+  if (title && title.textContent !== nextTitle) title.textContent = nextTitle;
+  if (help && help.textContent !== nextHelp) help.textContent = nextHelp;
 
   wrapper.querySelectorAll<HTMLButtonElement>("button[data-ultra-area-option]").forEach((button) => {
     const areaKey = button.dataset.ultraAreaOption as UltraArea;
     const area = ULTRA_AREAS[areaKey];
     const selected = currentArea === areaKey;
-    button.textContent = albanian ? area.labelSq : area.labelEn;
-    button.setAttribute("aria-pressed", selected ? "true" : "false");
+    const nextLabel = albanian ? area.labelSq : area.labelEn;
+    if (button.textContent !== nextLabel) button.textContent = nextLabel;
+    const nextPressed = selected ? "true" : "false";
+    if (button.getAttribute("aria-pressed") !== nextPressed) button.setAttribute("aria-pressed", nextPressed);
     button.style.border = selected ? "1px solid #0284c7" : "1px solid #cbd5e1";
     button.style.background = selected ? "#e0f2fe" : "#ffffff";
     button.style.color = selected ? "#075985" : "#334155";
@@ -314,7 +316,7 @@ function updateDomesticEconomySection() {
   document.querySelectorAll<HTMLDetailsElement>("details").forEach((section) => {
     const summary = section.querySelector(":scope > summary");
     const text = summary?.textContent?.toLowerCase() ?? "";
-    if (text.includes("economy")) section.hidden = domestic;
+    if (text.includes("economy") && section.hidden !== domestic) section.hidden = domestic;
   });
 }
 
