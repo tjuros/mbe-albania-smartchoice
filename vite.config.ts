@@ -70,6 +70,13 @@ function enablePricingRuntimes(): Plugin {
         );
       }
 
+      if (!transformed.includes('import "./upsRuntime";')) {
+        transformed = transformed.replace(
+          'import "./ultraRuntime";',
+          'import "./ultraRuntime";\nimport "./upsRuntime";',
+        );
+      }
+
       transformed = transformed
         .replace(
           'badge.style.background = "#dc2626";\n    badge.style.color = "#ffffff";\n    badge.style.border = "1px solid #b91c1c";',
