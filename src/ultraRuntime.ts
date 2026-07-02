@@ -18,6 +18,13 @@ type AreaDefinition = {
   labelSq: string;
 };
 
+type PostalClassification = {
+  area: UltraArea;
+  postalCode: string;
+  districtEn: string;
+  districtSq: string;
+};
+
 const EUR_TO_ALL = 93.9135;
 const ULTRA_EXTRA_KG_ALL = 50;
 const ULTRA_INCLUDED_WEIGHT_KG = 2;
@@ -36,8 +43,8 @@ const ULTRA_AREAS: Record<UltraArea, AreaDefinition> = {
     priceAll: 250,
     deliveryEn: "24–48 hours",
     deliverySq: "24–48 orë",
-    labelEn: "Tirana – rural area",
-    labelSq: "Tiranë – zonë rurale",
+    labelEn: "Tirana – surrounding / rural area",
+    labelSq: "Tiranë – zonë përreth / rurale",
   },
   "district-city": {
     priceAll: 250,
@@ -50,19 +57,120 @@ const ULTRA_AREAS: Record<UltraArea, AreaDefinition> = {
     priceAll: 250,
     deliveryEn: "24–72 hours",
     deliverySq: "24–72 orë",
-    labelEn: "Other district – rural area",
-    labelSq: "Rrethe – zonë rurale",
+    labelEn: "Other district – local / rural area",
+    labelSq: "Rrethe – zonë lokale / rurale",
   },
+};
+
+function codeRange(prefix: number, first: number, last: number) {
+  return Array.from({ length: last - first + 1 }, (_, index) =>
+    `${prefix}${String(first + index).padStart(2, "0")}`,
+  );
+}
+
+// Current Posta Shqiptare Tirana office list. Clear city-office codes are kept
+// separate from Kamëz, Vorë and the surrounding administrative units.
+const TIRANA_CITY_CODES = new Set([
+  ...codeRange(10, 1, 28),
+  "1031",
+  "1046",
+  "1055",
+  "1057",
+  "1058",
+  ...codeRange(10, 60, 65),
+]);
+
+const TIRANA_SURROUNDING_CODES = new Set([
+  "1029",
+  "1030",
+  ...codeRange(10, 32, 45),
+  ...codeRange(10, 47, 54),
+]);
+
+// High-confidence urban postal-office codes outside Tirana. Any recognized
+// Albanian district code not listed here is treated conservatively as a
+// local/rural route, which only affects the displayed delivery estimate; the
+// ULTRA price outside Tirana remains 250 ALL in either case.
+const OTHER_CITY_CODES = new Set([
+  ...codeRange(15, 1, 2),
+  ...codeRange(20, 1, 9),
+  ...codeRange(25, 1, 4),
+  ...codeRange(30, 1, 8), "3031", "3034",
+  "3301",
+  ...codeRange(34, 1, 4),
+  "3501",
+  ...codeRange(40, 1, 8),
+  "4301",
+  ...codeRange(44, 1, 2),
+  ...codeRange(45, 1, 3),
+  "4601",
+  ...codeRange(47, 1, 2),
+  ...codeRange(50, 1, 4),
+  ...codeRange(53, 1, 2),
+  ...codeRange(54, 1, 2),
+  ...codeRange(60, 1, 3),
+  ...codeRange(63, 1, 2),
+  ...codeRange(64, 1, 2),
+  ...codeRange(70, 1, 4),
+  ...codeRange(73, 1, 3),
+  ...codeRange(74, 1, 2),
+  ...codeRange(80, 1, 3),
+  "8301",
+  ...codeRange(84, 1, 3),
+  "8501",
+  "8601",
+  "8701",
+  ...codeRange(90, 1, 5),
+  ...codeRange(93, 1, 8), "9314",
+  ...codeRange(94, 1, 5),
+  ...codeRange(97, 1, 4),
+]);
+
+const POSTAL_DISTRICTS: Record<string, { en: string; sq: string }> = {
+  "10": { en: "Tirana", sq: "Tiranë" },
+  "15": { en: "Krujë", sq: "Krujë" },
+  "20": { en: "Durrës", sq: "Durrës" },
+  "25": { en: "Kavajë", sq: "Kavajë" },
+  "30": { en: "Elbasan", sq: "Elbasan" },
+  "33": { en: "Gramsh", sq: "Gramsh" },
+  "34": { en: "Librazhd", sq: "Librazhd" },
+  "35": { en: "Peqin", sq: "Peqin" },
+  "40": { en: "Shkodër", sq: "Shkodër" },
+  "43": { en: "Malësi e Madhe", sq: "Malësi e Madhe" },
+  "44": { en: "Pukë", sq: "Pukë" },
+  "45": { en: "Lezhë", sq: "Lezhë" },
+  "46": { en: "Mirditë", sq: "Mirditë" },
+  "47": { en: "Kurbin", sq: "Kurbin" },
+  "50": { en: "Berat", sq: "Berat" },
+  "53": { en: "Kuçovë", sq: "Kuçovë" },
+  "54": { en: "Skrapar", sq: "Skrapar" },
+  "60": { en: "Gjirokastër", sq: "Gjirokastër" },
+  "63": { en: "Tepelenë", sq: "Tepelenë" },
+  "64": { en: "Përmet", sq: "Përmet" },
+  "70": { en: "Korçë", sq: "Korçë" },
+  "73": { en: "Pogradec", sq: "Pogradec" },
+  "74": { en: "Kolonjë", sq: "Kolonjë" },
+  "80": { en: "Mat", sq: "Mat" },
+  "83": { en: "Dibër", sq: "Dibër" },
+  "84": { en: "Bulqizë", sq: "Bulqizë" },
+  "85": { en: "Kukës", sq: "Kukës" },
+  "86": { en: "Has", sq: "Has" },
+  "87": { en: "Tropojë", sq: "Tropojë" },
+  "90": { en: "Lushnjë", sq: "Lushnjë" },
+  "93": { en: "Fier", sq: "Fier" },
+  "94": { en: "Vlorë", sq: "Vlorë" },
+  "97": { en: "Sarandë", sq: "Sarandë" },
 };
 
 let currentDirection: "outbound" | "inbound" = "outbound";
 let currentCountry = "AL";
-let currentArea: UltraArea | null = null;
+let currentPostalCode = "";
 
 const round2 = (value: number) => Math.round((value + Number.EPSILON) * 100) / 100;
 const toNumber = (value: string) => Number(value.replace(/,/g, ".")) || 0;
 const allToEur = (value: number) => value / EUR_TO_ALL;
 const formatAll = (value: number) => new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(value);
+const normalizePostalCode = (value: string) => value.replace(/\D/g, "").slice(0, 4);
 
 function isRuntimeResult(value: unknown): value is UltraRuntimeResult {
   return !!value && typeof value === "object" && "name" in value && "details" in value && "serviceType" in value;
@@ -90,6 +198,28 @@ function additionalWeightFeeAll(weight: number) {
   return round2(Math.max(0, weight - ULTRA_INCLUDED_WEIGHT_KG) * ULTRA_EXTRA_KG_ALL);
 }
 
+function classifyPostalCode(value: string): PostalClassification | null {
+  const postalCode = normalizePostalCode(value);
+  if (!/^\d{4}$/.test(postalCode)) return null;
+
+  if (TIRANA_CITY_CODES.has(postalCode)) {
+    return { area: "tirana-city", postalCode, districtEn: "Tirana", districtSq: "Tiranë" };
+  }
+  if (TIRANA_SURROUNDING_CODES.has(postalCode)) {
+    return { area: "tirana-rural", postalCode, districtEn: "Tirana", districtSq: "Tiranë" };
+  }
+
+  const district = POSTAL_DISTRICTS[postalCode.slice(0, 2)];
+  if (!district || postalCode.endsWith("00")) return null;
+
+  return {
+    area: OTHER_CITY_CODES.has(postalCode) ? "district-city" : "district-rural",
+    postalCode,
+    districtEn: district.en,
+    districtSq: district.sq,
+  };
+}
+
 function isFullCarrierResultSet(results: UltraRuntimeResult[]) {
   const names = new Set(results.map((result) => result.name));
   return names.has("Posta Shqiptare (EMS)") && names.has("FedEx");
@@ -112,26 +242,34 @@ function ensureKosovoResult(results: UltraRuntimeResult[]) {
 function applyDomesticOffer(result: UltraRuntimeResult, weight: number, albanian: boolean) {
   result.serviceType = "MBE Express";
 
-  if (!currentArea) {
+  const classification = classifyPostalCode(currentPostalCode);
+  if (!classification) {
     result.price = null;
     result.possible = false;
     result.status = "no";
     result.warning = albanian
-      ? "Zgjidhni zonën e dorëzimit për të llogaritur çmimin ULTRA."
-      : "Select the delivery area to calculate the ULTRA price.";
+      ? "Vendosni një kod postar shqiptar të vlefshëm me 4 shifra."
+      : "Enter a valid four-digit Albanian destination postal code.";
     result.details = [
       ULTRA_MARKER,
-      albanian ? "Tarifa llogaritet për dërgesë, jo për çdo pako." : "The tariff is calculated per shipment, not per package.",
+      albanian
+        ? "Zona dhe çmimi përcaktohen automatikisht nga kodi postar."
+        : "The delivery area and price are determined automatically from the postal code.",
+      albanian
+        ? "Tarifa llogaritet për dërgesë, jo për çdo pako."
+        : "The tariff is calculated per shipment, not per package.",
     ];
     return;
   }
 
-  const area = ULTRA_AREAS[currentArea];
+  const area = ULTRA_AREAS[classification.area];
   const extraAll = additionalWeightFeeAll(weight);
   const totalAll = round2(area.priceAll + extraAll);
   const details = albanian
     ? [
         `${ULTRA_MARKER}: çmimet përfshijnë TVSH`,
+        `Kodi postar: ${classification.postalCode}`,
+        `Filiali / rrethi: ${classification.districtSq}`,
         `Zona: ${area.labelSq}`,
         `Koha normale e dorëzimit: ${area.deliverySq}`,
         `Pesha reale totale e dërgesës: ${weight.toFixed(2)} kg`,
@@ -141,6 +279,8 @@ function applyDomesticOffer(result: UltraRuntimeResult, weight: number, albanian
       ]
     : [
         `${ULTRA_MARKER}: prices include VAT`,
+        `Postal code: ${classification.postalCode}`,
+        `Postal branch / district: ${classification.districtEn}`,
         `Area: ${area.labelEn}`,
         `Normal delivery time: ${area.deliveryEn}`,
         `Total actual shipment weight: ${weight.toFixed(2)} kg`,
@@ -150,7 +290,7 @@ function applyDomesticOffer(result: UltraRuntimeResult, weight: number, albanian
       ];
 
   if (extraAll > 0) {
-    details.splice(5, 0, albanian
+    details.splice(7, 0, albanian
       ? `Mbi 2 kg: ${ULTRA_EXTRA_KG_ALL} ALL/kg (+${formatAll(extraAll)} ALL)`
       : `Above 2 kg: ${ULTRA_EXTRA_KG_ALL} ALL/kg (+${formatAll(extraAll)} ALL)`);
   }
@@ -228,87 +368,35 @@ function triggerRecalculation() {
   input.dispatchEvent(new Event("input", { bubbles: true }));
 }
 
-function updateAreaButtons(wrapper: HTMLElement) {
-  const albanian = isAlbanian();
-  const title = wrapper.querySelector<HTMLElement>("[data-ultra-area-title]");
-  const help = wrapper.querySelector<HTMLElement>("[data-ultra-area-help]");
-  const nextTitle = albanian ? "Zona e dorëzimit ULTRA" : "ULTRA delivery area";
-  const nextHelp = albanian
-    ? "Kërkohet për çmimin dhe afatin e saktë të dorëzimit."
-    : "Required for the exact price and delivery time.";
-  if (title && title.textContent !== nextTitle) title.textContent = nextTitle;
-  if (help && help.textContent !== nextHelp) help.textContent = nextHelp;
-
-  wrapper.querySelectorAll<HTMLButtonElement>("button[data-ultra-area-option]").forEach((button) => {
-    const areaKey = button.dataset.ultraAreaOption as UltraArea;
-    const area = ULTRA_AREAS[areaKey];
-    const selected = currentArea === areaKey;
-    const nextLabel = albanian ? area.labelSq : area.labelEn;
-    if (button.textContent !== nextLabel) button.textContent = nextLabel;
-    const nextPressed = selected ? "true" : "false";
-    if (button.getAttribute("aria-pressed") !== nextPressed) button.setAttribute("aria-pressed", nextPressed);
-    button.style.border = selected ? "1px solid #0284c7" : "1px solid #cbd5e1";
-    button.style.background = selected ? "#e0f2fe" : "#ffffff";
-    button.style.color = selected ? "#075985" : "#334155";
-    button.style.fontWeight = selected ? "800" : "700";
-  });
+function removeLegacyAreaUi() {
+  document.querySelector<HTMLElement>('[data-ultra-area="true"]')?.remove();
 }
 
-function ensureAreaUi() {
-  const select = document.querySelector<HTMLSelectElement>('select[aria-hidden="true"]') ?? document.querySelector("select");
-  const countryContainer = select?.parentElement;
-  if (!countryContainer) return;
+function updatePostalCodeUi() {
+  removeLegacyAreaUi();
 
-  let wrapper = countryContainer.querySelector<HTMLElement>('[data-ultra-area="true"]');
-  if (!wrapper) {
-    wrapper = document.createElement("div");
-    wrapper.dataset.ultraArea = "true";
-    wrapper.style.marginTop = "12px";
-    wrapper.style.padding = "12px";
-    wrapper.style.border = "1px solid #bae6fd";
-    wrapper.style.borderRadius = "12px";
-    wrapper.style.background = "#f0f9ff";
+  const input = document.getElementById("dhl-zip-code");
+  const wrapper = input?.closest<HTMLElement>('[data-smart-zip="true"], .smart-zip-wrap');
+  if (!(input instanceof HTMLInputElement) || !wrapper) return;
 
-    const title = document.createElement("div");
-    title.dataset.ultraAreaTitle = "true";
-    title.style.fontWeight = "800";
-    title.style.marginBottom = "8px";
+  const domestic = currentDirection === "outbound" && currentCountry === "AL";
+  if (!domestic) return;
 
-    const grid = document.createElement("div");
-    grid.style.display = "grid";
-    grid.style.gridTemplateColumns = "repeat(2, minmax(0, 1fr))";
-    grid.style.gap = "8px";
+  wrapper.hidden = false;
+  input.maxLength = 4;
+  input.inputMode = "numeric";
+  input.placeholder = "1001";
 
-    (Object.keys(ULTRA_AREAS) as UltraArea[]).forEach((areaKey) => {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.dataset.ultraAreaOption = areaKey;
-      button.style.minHeight = "44px";
-      button.style.padding = "9px 10px";
-      button.style.borderRadius = "10px";
-      button.style.cursor = "pointer";
-      button.style.lineHeight = "1.25";
-      button.addEventListener("click", () => {
-        currentArea = areaKey;
-        updateAreaButtons(wrapper!);
-        triggerRecalculation();
-      });
-      grid.append(button);
-    });
+  const albanian = isAlbanian();
+  const label = wrapper.querySelector<HTMLElement>(".smart-zip-label");
+  const help = wrapper.querySelector<HTMLElement>(".smart-zip-help");
+  const nextLabel = albanian ? "Kodi postar i destinacionit" : "Destination postal code";
+  const nextHelp = albanian
+    ? "ULTRA përcakton automatikisht zonën, çmimin dhe afatin nga kodi postar."
+    : "ULTRA automatically determines the area, price and delivery time from the postal code.";
 
-    const help = document.createElement("div");
-    help.dataset.ultraAreaHelp = "true";
-    help.style.marginTop = "7px";
-    help.style.color = "#64748b";
-    help.style.fontSize = "12px";
-    help.style.lineHeight = "1.4";
-
-    wrapper.append(title, grid, help);
-    countryContainer.append(wrapper);
-  }
-
-  wrapper.hidden = !(currentDirection === "outbound" && currentCountry === "AL");
-  updateAreaButtons(wrapper);
+  if (label && label.textContent !== nextLabel) label.textContent = nextLabel;
+  if (help && help.textContent !== nextHelp) help.textContent = nextHelp;
 }
 
 function updateDomesticEconomySection() {
@@ -321,7 +409,7 @@ function updateDomesticEconomySection() {
 }
 
 function updateUi() {
-  ensureAreaUi();
+  updatePostalCodeUi();
   updateDomesticEconomySection();
 }
 
@@ -329,8 +417,20 @@ document.addEventListener("change", (event) => {
   const target = event.target;
   if (!(target instanceof HTMLSelectElement)) return;
   currentCountry = target.value;
-  if (currentCountry !== "AL") currentArea = null;
+  if (currentCountry !== "AL") currentPostalCode = "";
   queueMicrotask(updateUi);
+}, true);
+
+document.addEventListener("input", (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLInputElement) || target.id !== "dhl-zip-code") return;
+
+  const normalized = currentCountry === "AL"
+    ? normalizePostalCode(target.value)
+    : target.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  if (target.value !== normalized) target.value = normalized;
+  currentPostalCode = normalized;
+  triggerRecalculation();
 }, true);
 
 document.addEventListener("click", (event) => {
@@ -343,7 +443,7 @@ document.addEventListener("click", (event) => {
   if (label === "Reset" || label === "Rivendos") {
     currentDirection = "outbound";
     currentCountry = "AL";
-    currentArea = null;
+    currentPostalCode = "";
   }
 
   queueMicrotask(updateUi);
