@@ -1,0 +1,44 @@
+name: Inspect UPS area database
+
+on:
+  push:
+    paths:
+      - ".github/workflows/inspect-ups-area.yml"
+      - "public/remote/ups-area-2026.b64"
+
+permissions:
+  contents: write
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect compressed database
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import base64, gzip, hashlib
+
+          source = Path("public/remote/ups-area-2026.b64")
+          encoded = source.read_text(encoding="utf-8").strip()
+          compressed = base64.b64decode(encoded)
+          decoded = gzip.decompress(compressed)
+          preview = decoded[:2000].decode("utf-8", errors="replace")
+          report = "\n".join([
+              f"encoded_chars={len(encoded)}",
+              f"compressed_bytes={len(compressed)}",
+              f"decoded_bytes={len(decoded)}",
+              f"sha256={hashlib.sha256(decoded).hexdigest()}",
+              "--- preview ---",
+              preview,
+          ])
+          Path("public/remote/ups-area-format.txt").write_text(report, encoding="utf-8")
+          PY
+      - name: Commit inspection report
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/remote/ups-area-format.txt
+          git diff --cached --quiet || git commit -m "Inspect UPS area database format"
+          git push
