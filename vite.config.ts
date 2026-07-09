@@ -49,17 +49,10 @@ function enablePricingRuntimes(): Plugin {
 
       let transformed = code;
 
-      if (!transformed.includes('import "./remoteRuntime";')) {
-        transformed = transformed.replace(
-          'import "./dhlRuntime";',
-          'import "./dhlRuntime";\nimport "./remoteRuntime";',
-        );
-      }
-
       if (!transformed.includes('import "./eliteRuntime";')) {
         transformed = transformed.replace(
-          'import "./remoteRuntime";',
-          'import "./remoteRuntime";\nimport "./eliteRuntime";',
+          'import "./dhlRuntime";',
+          'import "./dhlRuntime";\nimport "./eliteRuntime";',
         );
       }
 
@@ -77,32 +70,7 @@ function enablePricingRuntimes(): Plugin {
         );
       }
 
-      transformed = transformed
-        .replace(
-          'badge.style.background = "#dc2626";\n    badge.style.color = "#ffffff";\n    badge.style.border = "1px solid #b91c1c";',
-          'badge.style.background = "#e5e7eb";\n    badge.style.color = "#475569";\n    badge.style.border = "1px solid #cbd5e1";',
-        )
-        .replace(
-          'card.style.background = "#fff1f2";\n      card.style.border = "1px solid #f87171";\n      card.style.boxShadow = "0 1px 2px rgba(220,38,38,.08)";',
-          'card.style.background = "#f8fafc";\n      card.style.border = "1px solid #cbd5e1";\n      card.style.boxShadow = "0 1px 2px rgba(100,116,139,.08)";',
-        );
-
       return transformed === code ? null : transformed;
-    },
-    transformIndexHtml(html) {
-      return html
-        .replace(
-          'const domestic = !inbound && select.value === "AL";\n        wrapper.hidden = domestic;',
-          'wrapper.hidden = false;',
-        )
-        .replace(
-          'Përdoret për kontrollin automatik të zonës së largët DHL.',
-          'Përdoret për kontrollin e itinerarit, zonës dhe tarifave shtesë.',
-        )
-        .replace(
-          'Used for automatic DHL remote-area checking.',
-          'Used for route, zone and surcharge checks.',
-        );
     },
   };
 }
