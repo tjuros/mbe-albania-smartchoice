@@ -31,33 +31,32 @@ function enablePricingRuntimes(): Plugin {
                   direction={direction}
                   style={inputStyle()}
                 />
-                <div data-smart-zip="true" className="smart-zip-wrap" style={{ marginTop: 12 }}>
-                  <label className="smart-zip-label" htmlFor="dhl-zip-code" style={{ display: "block", marginBottom: 6, fontWeight: 800 }}>
-                    {direction === "outbound" ? copy.destinationPostalCode : copy.originPostalCode}
-                  </label>
-                  <input
-                    {...commonInputProps}
-                    id="dhl-zip-code"
-                    className="smart-zip-input"
-                    type="text"
-                    inputMode={isDomestic ? "numeric" : "text"}
-                    autoComplete="postal-code"
-                    maxLength={isDomestic ? 4 : 12}
-                    value={postalCode}
-                    onChange={(event) => {
-                      const raw = event.target.value.toUpperCase();
-                      const next = isDomestic
-                        ? raw.replace(/\\D/g, "").slice(0, 4)
-                        : raw.replace(/[^A-Z0-9]/g, "").slice(0, 12);
-                      setPostalCode(next);
-                    }}
-                    placeholder={isDomestic ? "1001" : "e.g. 1001"}
-                    style={{ ...inputStyle(), textTransform: "uppercase" }}
-                  />
-                  <div className="smart-zip-help" style={{ marginTop: 6, color: "#64748b", fontSize: 12, lineHeight: 1.4 }}>
-                    {isDomestic ? copy.ultraPostalCodeHelp : copy.postalCodeHelp}
+                {isDomestic ? (
+                  <div data-smart-zip="true" className="smart-zip-wrap" style={{ marginTop: 12 }}>
+                    <label className="smart-zip-label" htmlFor="dhl-zip-code" style={{ display: "block", marginBottom: 6, fontWeight: 800 }}>
+                      {copy.destinationPostalCode}
+                    </label>
+                    <input
+                      {...commonInputProps}
+                      id="dhl-zip-code"
+                      className="smart-zip-input"
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete="postal-code"
+                      maxLength={4}
+                      value={postalCode}
+                      onChange={(event) => {
+                        const next = event.target.value.replace(/\\D/g, "").slice(0, 4);
+                        setPostalCode(next);
+                      }}
+                      placeholder="1001"
+                      style={inputStyle()}
+                    />
+                    <div className="smart-zip-help" style={{ marginTop: 6, color: "#64748b", fontSize: 12, lineHeight: 1.4 }}>
+                      {copy.ultraPostalCodeHelp}
+                    </div>
                   </div>
-                </div>`,
+                ) : null}`,
         );
 
         transformed = transformed
@@ -150,6 +149,39 @@ function enablePricingRuntimes(): Plugin {
           .replace(
             '    buildResult("FedEx", "MBE Express", (16.1 + zone * 5.65 + kg * 3.15) * inboundFactor * docsFactor, details(5000)),\n',
             '',
+          );
+
+        return transformed === code ? null : transformed;
+      }
+
+      if (id.endsWith("/src/dhlRuntime.ts")) {
+        let transformed = code;
+
+        transformed = transformed.replace(
+          /const EXPRESS_ZONES: Record<string, number> = \{[\s\S]*?\n\};/,
+          `const EXPRESS_ZONE_BY_COUNTRY: Record<string, number> = {\n  GR: 1, BA: 1, ME: 1, XK: 1, MK: 1, RS: 1,\n  AT: 2, IT: 2, DE: 2, LI: 2, SM: 2, VA: 2, CH: 2,\n  AD: 3, GG: 3, NL: 3, HU: 3, BE: 3, IS: 3, LU: 3, MT: 3, GB: 3, MC: 3, SE: 3,\n  BG: 3, DK: 3, FI: 3, FR: 3, NO: 3, ES: 3, TR: 3, CY: 3, CZ: 3, IE: 3, RO: 3,\n  SI: 3, SK: 3, PL: 3, PT: 3, IL: 3, HR: 3, JE: 3, GI: 3,\n  US: 4, MX: 4, CA: 4, FO: 4, GL: 4,\n  SA: 5, BH: 5, HK: 5, MY: 5, AE: 5, CN: 5, PH: 5, IN: 5, ID: 5, IR: 5, JP: 5,\n  JO: 5, QA: 5, TW: 5, UA: 5, EE: 5, KW: 5, MO: 5, KR: 5, SG: 5, LV: 5, LT: 5,\n};\n\nconst EXPRESS_UNLISTED_COUNTRIES = new Set([\n  "AL", "AQ", "AX", "BV", "CC", "CX", "EH", "GS", "HM", "IM", "IO", "MF",\n  "NF", "PM", "PN", "PS", "SJ", "TF", "TK", "UM", "WF",\n]);\n\nfunction dhlExpressZone(countryCode: string) {\n  const configured = EXPRESS_ZONE_BY_COUNTRY[countryCode];\n  if (configured) return configured;\n  return EXPRESS_UNLISTED_COUNTRIES.has(countryCode) ? 0 : 6;\n}`,
+        );
+
+        transformed = transformed
+          .replace(
+            "const DHL_EXPRESS_FUEL = 0.4725;",
+            "const DHL_EXPRESS_FUEL = 0.4725;\nconst DHL_GOGREEN_PLUS_PER_KG = 0.16;",
+          )
+          .replace(
+            "const fuelBase = transport + extra.total;",
+            "const goGreenPlus = round2(Math.max(0.5, weight) * DHL_GOGREEN_PLUS_PER_KG);\n  const fuelBase = transport + extra.total + goGreenPlus;",
+          )
+          .replace(
+            '    "DHL 2026 contract rate",',
+            '    "DHL contract ratecard 18-Jun-2026",',
+          )
+          .replace(
+            '  details.push(`Fuel ${(fuelRate * 100).toFixed(2)}%: ${eur(fuel)}`);',
+            '  details.push(`GoGreen Plus €0.16/kg: ${eur(goGreenPlus)}`);\n  details.push(`Fuel ${(fuelRate * 100).toFixed(2)}%: ${eur(fuel)}`);',
+          )
+          .replace(
+            "const zone = EXPRESS_ZONES[currentCountry];",
+            "const zone = dhlExpressZone(currentCountry);",
           );
 
         return transformed === code ? null : transformed;
