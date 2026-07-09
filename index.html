@@ -81,7 +81,7 @@
   <body>
     <div id="root"></div>
 
-    <section class="remote-reference" aria-label="Remote area reference lists">
+    <section id="remote-reference" class="remote-reference" aria-label="Remote area reference lists" hidden>
       <div class="remote-reference-card">
         <h2 class="remote-reference-title">Important: Remote / Extended Area surcharges</h2>
         <p class="remote-reference-text">
@@ -106,5 +106,43 @@
     </section>
 
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      (() => {
+        let direction = "outbound";
+        let country = "AL";
+
+        const updateRemoteReference = () => {
+          const section = document.getElementById("remote-reference");
+          if (!section) return;
+          section.hidden = direction === "outbound" && country === "AL";
+        };
+
+        document.addEventListener("change", (event) => {
+          if (!(event.target instanceof HTMLSelectElement)) return;
+          country = event.target.value;
+          updateRemoteReference();
+        }, true);
+
+        document.addEventListener("click", (event) => {
+          if (!(event.target instanceof Element)) return;
+          const label = event.target.closest("button")?.textContent?.trim() ?? "";
+          if (label.includes("Import") || label.includes("Hyrëse")) direction = "inbound";
+          if (label.includes("Export") || label.includes("Eksport") || label.includes("Dalëse")) direction = "outbound";
+          if (label === "Reset" || label === "Rivendos") {
+            direction = "outbound";
+            country = "AL";
+          }
+          queueMicrotask(updateRemoteReference);
+        }, true);
+
+        new MutationObserver(() => {
+          const select = document.querySelector("select");
+          if (select instanceof HTMLSelectElement) country = select.value;
+          updateRemoteReference();
+        }).observe(document.documentElement, { childList: true, subtree: true });
+
+        updateRemoteReference();
+      })();
+    </script>
   </body>
 </html>
