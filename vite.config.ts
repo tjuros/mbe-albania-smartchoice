@@ -77,33 +77,6 @@ function enablePricingRuntimes(): Plugin {
         );
       }
 
-      if (!transformed.includes("function loadUpsRemoteRuntime")) {
-        transformed = transformed.replace(
-          'import "./upsRuntime";',
-          `import "./upsRuntime";
-
-let upsRemoteRuntimeRequested = false;
-function loadUpsRemoteRuntime() {
-  if (upsRemoteRuntimeRequested) return;
-  upsRemoteRuntimeRequested = true;
-  void import("./upsRemoteRuntime").catch((error) => {
-    upsRemoteRuntimeRequested = false;
-    console.error("UPS remote-area module failed to load", error);
-  });
-}
-
-document.addEventListener("focusin", (event) => {
-  const target = event.target;
-  if (target instanceof HTMLInputElement && target.id === "dhl-zip-code") loadUpsRemoteRuntime();
-}, true);
-
-document.addEventListener("input", (event) => {
-  const target = event.target;
-  if (target instanceof HTMLInputElement && target.id === "dhl-zip-code") loadUpsRemoteRuntime();
-}, true);`,
-        );
-      }
-
       transformed = transformed
         .replace(
           'badge.style.background = "#dc2626";\n    badge.style.color = "#ffffff";\n    badge.style.border = "1px solid #b91c1c";',
