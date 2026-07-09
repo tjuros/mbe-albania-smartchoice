@@ -63,11 +63,11 @@ function enablePricingRuntimes(): Plugin {
         transformed = transformed
           .replace(
             '    destinationCountry: "Destination country",\n    originCountry: "Origin country",',
-            '    destinationCountry: "Destination country",\n    originCountry: "Origin country",\n    destinationPostalCode: "Destination postal code",\n    originPostalCode: "Origin postal code",\n    postalCodeHelp: "Used where a courier tariff depends on the postal code.",\n    ultraPostalCodeHelp: "ULTRA determines the delivery area, price and delivery time from the postal code.",\n    emsPending: "Backup option — official EMS tariff is pending.",',
+            '    destinationCountry: "Destination country",\n    originCountry: "Origin country",\n    destinationPostalCode: "Destination postal code",\n    originPostalCode: "Origin postal code",\n    postalCodeHelp: "Used where a courier tariff depends on the postal code.",\n    ultraPostalCodeHelp: "ULTRA determines the delivery area, price and delivery time from the postal code.",',
           )
           .replace(
             '    destinationCountry: "Shteti i destinacionit",\n    originCountry: "Shteti i origjinës",',
-            '    destinationCountry: "Shteti i destinacionit",\n    originCountry: "Shteti i origjinës",\n    destinationPostalCode: "Kodi postar i destinacionit",\n    originPostalCode: "Kodi postar i origjinës",\n    postalCodeHelp: "Përdoret kur tarifa e korrierit varet nga kodi postar.",\n    ultraPostalCodeHelp: "ULTRA përcakton zonën, çmimin dhe afatin e dorëzimit nga kodi postar.",\n    emsPending: "Opsion rezervë — tarifa zyrtare EMS është në pritje.",',
+            '    destinationCountry: "Shteti i destinacionit",\n    originCountry: "Shteti i origjinës",\n    destinationPostalCode: "Kodi postar i destinacionit",\n    originPostalCode: "Kodi postar i origjinës",\n    postalCodeHelp: "Përdoret kur tarifa e korrierit varet nga kodi postar.",\n    ultraPostalCodeHelp: "ULTRA përcakton zonën, çmimin dhe afatin e dorëzimit nga kodi postar.",',
           )
           .replace(
             '    testPriceNotice: "All prices and zones are temporary test values.",',
@@ -140,10 +140,6 @@ function enablePricingRuntimes(): Plugin {
             '',
           )
           .replace(
-            '    buildResult("Posta Shqiptare (EMS)", "MBE Economy", (7.4 + zone * 3.1 + kg * 2.05) * inboundFactor * docsFactor, details(5000)),\n',
-            '    fail("Posta Shqiptare (EMS)", "MBE Economy", [copy.emsPending]),\n',
-          )
-          .replace(
             '    buildResult("UPS Standard", "MBE Economy", (9.7 + zone * 4.35 + kg * 2.35) * inboundFactor * docsFactor, details(5000)),\n',
             '',
           )
@@ -177,6 +173,13 @@ function enablePricingRuntimes(): Plugin {
         transformed = transformed.replace(
           'import "./ultraRuntime";',
           'import "./ultraRuntime";\nimport "./upsRuntime";',
+        );
+      }
+
+      if (!transformed.includes('import "./emsRuntime";')) {
+        transformed = transformed.replace(
+          'import "./upsRuntime";',
+          'import "./upsRuntime";\nimport "./emsRuntime";',
         );
       }
 
