@@ -92,6 +92,10 @@ function enablePricingRuntimes(): Plugin {
           .replace(
             '    setCountryCode("AL");\n    setCod(false);',
             '    setCountryCode("AL");\n    setPostalCode("");\n    setCod(false);',
+          )
+          .replace(
+            '  }, [isReady, direction, selectedCountry, isDomestic, chargeable, packages.length, cod, codAmount, shipmentType, copy]);',
+            '  }, [isReady, direction, selectedCountry, isDomestic, chargeable, packages.length, cod, codAmount, shipmentType, copy, postalCode]);',
           );
 
         transformed = transformed.replace(
