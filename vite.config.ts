@@ -42,6 +42,24 @@ function enablePricingRuntimes(): Plugin {
           );
         }
 
+        transformed = transformed
+          .replace(
+            'recommended: "Recommended",',
+            'recommended: "Recommended",\n    backupOption: "Backup option",',
+          )
+          .replace(
+            'recommended: "Rekomanduar",',
+            'recommended: "Rekomanduar",\n    backupOption: "Opsion rezervë",',
+          )
+          .replace(
+            '{highlighted && result.possible ? <span style={badgeStyle("info")}>{copy.recommended}</span> : null}',
+            '{highlighted && result.possible ? <span style={badgeStyle("info")}>{copy.recommended}</span> : null}\n            {(result.name.includes("EMS") || result.name.includes("Posta")) && result.possible ? <span style={badgeStyle("warn")}>{copy.backupOption}</span> : null}',
+          )
+          .replace(
+            'const overallWinner = possible.length ? [...possible].sort((a, b) => (a.price ?? Infinity) - (b.price ?? Infinity))[0] : null;',
+            `const recommendationRank = (result: PriceResult) => {\n      if (result.name.includes("DHL") || result.name.includes("UPS")) return 0;\n      if (result.name.includes("EMS") || result.name.includes("Posta")) return 2;\n      return 1;\n    };\n    const hasRecommendableOption = possible.some((result) => recommendationRank(result) < 2);\n    const overallWinner = hasRecommendableOption\n      ? [...possible].sort((a, b) => {\n          const rankDifference = recommendationRank(a) - recommendationRank(b);\n          return rankDifference || (a.price ?? Infinity) - (b.price ?? Infinity);\n        })[0]\n      : null;`,
+          );
+
         return transformed === code ? null : transformed;
       }
 
