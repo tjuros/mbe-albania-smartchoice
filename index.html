@@ -8,324 +8,103 @@
     <style>
       * { box-sizing: border-box; }
       html { -webkit-text-size-adjust: 100%; }
-      body { margin: 0; font-family: Ubuntu, Arial, sans-serif; background: #f8fafc; color: #111827; }
+      body {
+        margin: 0;
+        font-family: Ubuntu, Arial, sans-serif;
+        background: #f8fafc;
+        color: #111827;
+      }
       input, button, textarea, select { font: inherit; }
       button { touch-action: manipulation; }
       #root { min-height: 100vh; }
       summary::-webkit-details-marker { display: none; }
 
-      .smart-hidden-available,
-      .smart-hidden-duplicate {
-        display: none !important;
+      .remote-reference {
+        max-width: 1180px;
+        margin: 0 auto 32px;
+        padding: 0 20px;
       }
 
-      .smart-unavailable {
-        background: #e5e7eb !important;
-        color: #475569 !important;
-        border: 1px solid #cbd5e1 !important;
+      .remote-reference-card {
+        padding: 18px;
+        border: 1px solid #f59e0b;
+        border-radius: 14px;
+        background: #fffbeb;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
       }
 
-      .smart-unavailable-card {
-        background: #f8fafc !important;
-        border-color: #d1d5db !important;
-        box-shadow: none !important;
-      }
-
-      .smart-dhl-pill {
-        max-width: 100% !important;
-        white-space: normal !important;
-        text-align: center !important;
-        line-height: 1.2 !important;
-      }
-
-      .smart-shipment-summary {
-        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important;
-        color: #ffffff !important;
-        border: 1px solid #334155 !important;
-        box-shadow: 0 14px 34px rgba(15, 23, 42, .24) !important;
-      }
-
-      .smart-shipment-summary > summary,
-      .smart-shipment-summary > summary span,
-      .smart-shipment-summary strong {
-        color: #ffffff !important;
-      }
-
-      .smart-shipment-summary > div {
-        color: #cbd5e1 !important;
-      }
-
-      .smart-shipment-summary > summary {
-        padding: 2px 0 !important;
-      }
-
-      .smart-zip-wrap {
-        margin-top: 12px;
-      }
-
-      .smart-zip-label {
-        display: block;
-        margin-bottom: 6px;
-        font-weight: 800;
-      }
-
-      .smart-zip-input {
-        width: 100%;
-        min-height: 50px;
-        padding: 14px 12px;
-        border: 1px solid #d0d7de;
-        border-radius: 12px;
-        background: #fff;
-        color: #111827;
+      .remote-reference-title {
+        margin: 0 0 8px;
         font-size: 17px;
-        text-transform: uppercase;
+        font-weight: 800;
+        color: #92400e;
       }
 
-      .smart-zip-help {
-        margin-top: 6px;
-        color: #64748b;
-        font-size: 12px;
-        line-height: 1.4;
+      .remote-reference-text {
+        margin: 0;
+        color: #78350f;
+        line-height: 1.5;
       }
 
-      @media (max-width: 1100px) {
-        .smart-main-grid {
-          grid-template-columns: 1fr !important;
-        }
+      .remote-reference-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 14px;
+      }
+
+      .remote-reference-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 42px;
+        padding: 10px 14px;
+        border: 1px solid #d97706;
+        border-radius: 10px;
+        background: #ffffff;
+        color: #92400e;
+        font-weight: 800;
+        text-decoration: none;
+      }
+
+      .remote-reference-link:hover {
+        background: #fef3c7;
+      }
+
+      @media (max-width: 640px) {
+        .remote-reference { padding: 0 14px; }
+        .remote-reference-links { display: grid; }
+        .remote-reference-link { width: 100%; }
       }
     </style>
   </head>
   <body>
     <div id="root"></div>
 
-    <script>
-      const nativeArrayFilter = Array.prototype.filter;
-
-      Array.prototype.filter = function (callback, thisArg) {
-        const filtered = nativeArrayFilter.call(this, callback, thisArg);
-        const containsShippingResults = filtered.some(
-          (item) => item && typeof item === "object" && "serviceType" in item && "name" in item,
-        );
-
-        if (!containsShippingResults) return filtered;
-        return nativeArrayFilter.call(filtered, (item) => item?.name !== "UPS Standard");
-      };
-
-      const forcePriceRefresh = () => {
-        const weightInput = document.querySelector('input[placeholder="kg"]');
-        if (weightInput) weightInput.dispatchEvent(new Event("input", { bubbles: true }));
-      };
-
-      const ensureZipField = () => {
-        const select = document.querySelector("select");
-        if (!(select instanceof HTMLSelectElement)) return;
-
-        const countryBlock = select.parentElement;
-        if (!countryBlock) return;
-
-        let wrapper = countryBlock.querySelector(':scope > [data-smart-zip="true"]');
-        if (!(wrapper instanceof HTMLElement)) {
-          wrapper = document.createElement("div");
-          wrapper.dataset.smartZip = "true";
-          wrapper.className = "smart-zip-wrap";
-
-          const label = document.createElement("label");
-          label.className = "smart-zip-label";
-          label.htmlFor = "dhl-zip-code";
-
-          const input = document.createElement("input");
-          input.id = "dhl-zip-code";
-          input.className = "smart-zip-input";
-          input.type = "text";
-          input.inputMode = "text";
-          input.autocomplete = "postal-code";
-          input.maxLength = 12;
-          input.placeholder = "e.g. 1001";
-          input.setAttribute("aria-label", "ZIP Code");
-
-          const help = document.createElement("div");
-          help.className = "smart-zip-help";
-
-          input.addEventListener("input", () => {
-            const normalized = input.value.toUpperCase().replace(/[^A-Z0-9 -]/g, "");
-            if (normalized !== input.value) input.value = normalized;
-            forcePriceRefresh();
-          });
-
-          wrapper.append(label, input, help);
-          select.insertAdjacentElement("afterend", wrapper);
-        }
-
-        const countryLabel = countryBlock.querySelector("label")?.textContent?.trim() ?? "";
-        const inbound = countryLabel.includes("Origin") || countryLabel.includes("origjinës");
-        const albanian = countryLabel.includes("Shteti");
-        const domestic = !inbound && select.value === "AL";
-        wrapper.hidden = domestic;
-
-        const zipLabel = wrapper.querySelector(".smart-zip-label");
-        const zipHelp = wrapper.querySelector(".smart-zip-help");
-        const nextLabel = inbound
-          ? (albanian ? "Kodi postar i marrjes" : "Pickup ZIP Code")
-          : (albanian ? "Kodi postar i destinacionit" : "Destination ZIP Code");
-        const nextHelp = albanian
-          ? "Përdoret për kontrollin automatik të zonës së largët DHL."
-          : "Used for automatic DHL remote-area checking.";
-
-        if (zipLabel && zipLabel.textContent !== nextLabel) zipLabel.textContent = nextLabel;
-        if (zipHelp && zipHelp.textContent !== nextHelp) zipHelp.textContent = nextHelp;
-
-        if (select.dataset.smartZipBound !== "true") {
-          select.dataset.smartZipBound = "true";
-          select.addEventListener("change", () => {
-            const input = document.getElementById("dhl-zip-code");
-            if (input instanceof HTMLInputElement) input.value = "";
-            forcePriceRefresh();
-          });
-        }
-      };
-
-      const polishResultCards = () => {
-        document.querySelectorAll("div").forEach((element) => {
-          if (element.style.gridTemplateColumns === "1.05fr 0.95fr") {
-            element.classList.add("smart-main-grid");
-          }
-        });
-
-        document.querySelectorAll("details").forEach((section) => {
-          const footer = section.parentElement?.parentElement;
-          if (!(footer instanceof HTMLElement)) return;
-          if (footer.style.position === "fixed" || footer.style.position === "sticky") {
-            section.classList.add("smart-shipment-summary");
-          }
-        });
-
-        const dhlNames = new Set(["DHL Express Worldwide", "DHL Economy Select"]);
-
-        document.querySelectorAll("div").forEach((element) => {
-          const text = element.textContent?.trim() ?? "";
-          if (!dhlNames.has(text)) return;
-
-          const isPill = element.style.borderRadius === "999px" || element.style.minHeight === "34px";
-          if (!isPill) return;
-
-          element.classList.add("smart-dhl-pill");
-
-          const parent = element.parentElement;
-          if (!parent) return;
-
-          Array.from(parent.children).forEach((sibling) => {
-            if (sibling !== element && sibling.textContent?.trim() === text) {
-              sibling.classList.add("smart-hidden-duplicate");
-            }
-          });
-        });
-
-        const availableLabels = new Set(["Available", "E disponueshme"]);
-        const unavailableLabels = new Set(["Unavailable", "E padisponueshme"]);
-
-        document.querySelectorAll("span").forEach((badge) => {
-          const label = badge.textContent?.trim() ?? "";
-
-          if (availableLabels.has(label)) {
-            badge.classList.add("smart-hidden-available");
-            return;
-          }
-
-          if (!unavailableLabels.has(label)) return;
-
-          badge.classList.add("smart-unavailable");
-
-          const badgeRow = badge.parentElement;
-          const contentColumn = badgeRow?.parentElement;
-          const row = contentColumn?.parentElement;
-          const card = row?.parentElement;
-
-          if (card instanceof HTMLElement) {
-            card.classList.add("smart-unavailable-card");
-          }
-        });
-      };
-
-      const updateSmartChoiceUi = () => {
-        document.querySelectorAll("div, p, span").forEach((element) => {
-          if (element.textContent?.trim() === "Mail Boxes Etc. Albania") {
-            element.textContent = "MBE Albania";
-          }
-        });
-
-        document.querySelectorAll("details").forEach((section) => {
-          const summary = section.querySelector(":scope > summary");
-          const label = summary?.textContent?.toLowerCase() ?? "";
-
-          if (label.includes("economy")) {
-            section.style.background = "#f0fdf4";
-            section.style.border = "1px solid #bbf7d0";
-            section.style.boxShadow = "0 1px 2px rgba(22,163,74,.06)";
-            if (summary instanceof HTMLElement) summary.style.color = "#166534";
-          }
-
-          if (label.includes("express")) {
-            section.style.background = "#fff1f2";
-            section.style.border = "1px solid #fecdd3";
-            section.style.boxShadow = "0 1px 2px rgba(220,38,38,.06)";
-            if (summary instanceof HTMLElement) summary.style.color = "#9f1239";
-          }
-        });
-
-        ensureZipField();
-        polishResultCards();
-      };
-
-      new MutationObserver(updateSmartChoiceUi).observe(document.documentElement, {
-        childList: true,
-        subtree: true,
-        characterData: true,
-      });
-    </script>
+    <section class="remote-reference" aria-label="Remote area reference lists">
+      <div class="remote-reference-card">
+        <h2 class="remote-reference-title">Important: Remote / Extended Area surcharges</h2>
+        <p class="remote-reference-text">
+          Remote and Extended Area surcharges are not calculated automatically and are not included in the displayed price.
+          Check the destination or pickup postal code before confirming the quotation.
+        </p>
+        <div class="remote-reference-links">
+          <a
+            class="remote-reference-link"
+            href="https://docs.google.com/spreadsheets/d/1WbeVvdQSYQbg1EARynB6GGsF8hhcmIqS/edit?usp=sharing&amp;ouid=106052693051848070775&amp;rtpof=true&amp;sd=true"
+            target="_blank"
+            rel="noopener noreferrer"
+          >Check UPS Remote / Extended Area list</a>
+          <a
+            class="remote-reference-link"
+            href="https://drive.google.com/file/d/1mIeo4iRnbBwY7HMhrM4YpjcTF1qL4gf8/view?usp=sharing"
+            target="_blank"
+            rel="noopener noreferrer"
+          >Check DHL Remote Area list</a>
+        </div>
+      </div>
+    </section>
 
     <script type="module" src="/src/main.tsx"></script>
-
-    <script>
-      window.addEventListener("load", () => {
-        const ExistingNumberFormat = Intl.NumberFormat;
-        const EUR_TO_ALL = 93.9135;
-
-        const FixedNumberFormat = function (locales, options) {
-          const fallback = new ExistingNumberFormat(locales, options);
-          const isEuroPrice = options?.style === "currency" && options?.currency === "EUR";
-
-          if (!isEuroPrice) return fallback;
-
-          return {
-            format(value) {
-              const numericValue = Number(value);
-              const selectedCountry = document.querySelector("select")?.value ?? "AL";
-              const allValue = Math.round(numericValue * EUR_TO_ALL).toLocaleString("en-US");
-
-              if (selectedCountry === "AL") return `${allValue} ALL`;
-
-              const euroValue = numericValue.toLocaleString("en-IE", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              });
-              return `€${euroValue} · ≈ ${allValue} ALL`;
-            },
-            formatToParts(value) {
-              return [{ type: "literal", value: this.format(value) }];
-            },
-            resolvedOptions() {
-              return fallback.resolvedOptions();
-            },
-          };
-        };
-
-        FixedNumberFormat.supportedLocalesOf = ExistingNumberFormat.supportedLocalesOf.bind(ExistingNumberFormat);
-        Intl.NumberFormat = FixedNumberFormat;
-        forcePriceRefresh();
-      });
-
-      updateSmartChoiceUi();
-      window.addEventListener("resize", polishResultCards);
-    </script>
   </body>
 </html>
