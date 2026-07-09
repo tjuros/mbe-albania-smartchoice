@@ -75,15 +75,31 @@ function classify(raw: string): Classification | null {
   if (!/^\d{4}$/.test(code)) return null;
   if (TIRANA_CITY.has(code)) return { area: "tirana-city", code, districtEn: "Tirana", districtSq: "Tiranë" };
   if (TIRANA_SURROUNDING.has(code)) return { area: "tirana-rural", code, districtEn: "Tirana", districtSq: "Tiranë" };
+
   const district = DISTRICTS[code.slice(0, 2)];
-  if (!district || code.endsWith("00")) return null;
-  return { area: OTHER_CITY.has(code) ? "district-city" : "district-rural", code, districtEn: district[0], districtSq: district[1] };
+  if (district) {
+    return {
+      area: OTHER_CITY.has(code) ? "district-city" : "district-rural",
+      code,
+      districtEn: district[0],
+      districtSq: district[1],
+    };
+  }
+
+  // ULTRA charges the same 250 ALL tariff outside Tirana. Accept any other
+  // four-digit Albanian destination code even when it is not in our branch map.
+  return {
+    area: "district-rural",
+    code,
+    districtEn: "Other district",
+    districtSq: "Rreth tjetër",
+  };
 }
 
 function ensureKosovo(results: UltraRuntimeResult[]) {
   if (direction !== "outbound" || country !== "XK" || results.some(r => r.name === "Ultra")) return;
   const names = new Set(results.map(r => r.name));
-  if (!names.has("Posta Shqiptare (EMS)") || !names.has("FedEx")) return;
+  if (!names.has("Posta Shqiptare (EMS)")) return;
   results.push({ name: "Ultra", price: null, possible: false, details: [], serviceType: "MBE Express", status: "no" });
 }
 
