@@ -32,7 +32,7 @@ function enablePricingRuntimes(): Plugin {
 
         transformed = transformed.replace(
           `): PriceResult[] {\n  if (shipmentType === "documents" && chargeable > 5) {`,
-          `): PriceResult[] {\n  if (zone < 0) {\n    const reason = languageUnavailableReason(copy);\n    return [\n      fail("Posta Shqiptare (EMS)", "MBE Economy", [reason]),\n      fail("DHL Standard", "MBE Economy", [reason]),\n      fail("UPS Standard", "MBE Economy", [reason]),\n      fail("DHL Express", "MBE Express", [reason]),\n      fail("UPS Express", "MBE Express", [reason]),\n      fail("FedEx", "MBE Express", [reason]),\n    ];\n  }\n\n  if (shipmentType === "documents" && chargeable > 5) {`,
+          `): PriceResult[] {\n  if (zone < 0) {\n    const reason = languageUnavailableReason(copy);\n    return [\n      fail("Posta Shqiptare (EMS)", "MBE Economy", [reason]),\n      fail("DHL Standard", "MBE Economy", [reason]),\n      fail("DHL Express", "MBE Express", [reason]),\n      fail("UPS Express", "MBE Express", [reason]),\n      fail("FedEx", "MBE Express", [reason]),\n    ];\n  }\n\n  if (shipmentType === "documents" && chargeable > 5) {`,
         );
 
         if (!transformed.includes("function languageUnavailableReason")) {
@@ -58,6 +58,14 @@ function enablePricingRuntimes(): Plugin {
           .replace(
             'const overallWinner = possible.length ? [...possible].sort((a, b) => (a.price ?? Infinity) - (b.price ?? Infinity))[0] : null;',
             `const recommendationRank = (result: PriceResult) => {\n      if (result.name.includes("DHL") || result.name.includes("UPS")) return 0;\n      if (result.name.includes("EMS") || result.name.includes("Posta")) return 2;\n      return 1;\n    };\n    const hasRecommendableOption = possible.some((result) => recommendationRank(result) < 2);\n    const overallWinner = hasRecommendableOption\n      ? [...possible].sort((a, b) => {\n          const rankDifference = recommendationRank(a) - recommendationRank(b);\n          return rankDifference || (a.price ?? Infinity) - (b.price ?? Infinity);\n        })[0]\n      : null;`,
+          )
+          .replace(
+            '      fail("UPS Standard", "MBE Economy", [copy.docsTooHeavy]),\n',
+            '',
+          )
+          .replace(
+            '    buildResult("UPS Standard", "MBE Economy", (9.7 + zone * 4.35 + kg * 2.35) * inboundFactor * docsFactor, details(5000)),\n',
+            '',
           );
 
         return transformed === code ? null : transformed;
