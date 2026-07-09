@@ -18,93 +18,10 @@
       button { touch-action: manipulation; }
       #root { min-height: 100vh; }
       summary::-webkit-details-marker { display: none; }
-
-      .remote-reference {
-        max-width: 1180px;
-        margin: 0 auto 32px;
-        padding: 0 20px;
-      }
-
-      .remote-reference-card {
-        padding: 18px;
-        border: 1px solid #f59e0b;
-        border-radius: 14px;
-        background: #fffbeb;
-        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
-      }
-
-      .remote-reference-title {
-        margin: 0 0 8px;
-        font-size: 17px;
-        font-weight: 800;
-        color: #92400e;
-      }
-
-      .remote-reference-text {
-        margin: 0;
-        color: #78350f;
-        line-height: 1.5;
-      }
-
-      .remote-reference-links {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        margin-top: 14px;
-      }
-
-      .remote-reference-link {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 42px;
-        padding: 10px 14px;
-        border: 1px solid #d97706;
-        border-radius: 10px;
-        background: #ffffff;
-        color: #92400e;
-        font-weight: 800;
-        text-decoration: none;
-      }
-
-      .remote-reference-link:hover {
-        background: #fef3c7;
-      }
-
-      @media (max-width: 640px) {
-        .remote-reference { padding: 0 14px; }
-        .remote-reference-links { display: grid; }
-        .remote-reference-link { width: 100%; }
-      }
     </style>
   </head>
   <body>
     <div id="root"></div>
-
-    <section class="remote-reference" aria-label="Remote area reference lists">
-      <div class="remote-reference-card">
-        <h2 class="remote-reference-title">Important: Remote / Extended Area surcharges</h2>
-        <p class="remote-reference-text">
-          Remote and Extended Area surcharges are not calculated automatically and are not included in the displayed price.
-          Check the destination or pickup postal code before confirming the quotation.
-        </p>
-        <div class="remote-reference-links">
-          <a
-            class="remote-reference-link"
-            href="https://docs.google.com/spreadsheets/d/1WbeVvdQSYQbg1EARynB6GGsF8hhcmIqS/edit?usp=sharing&amp;ouid=106052693051848070775&amp;rtpof=true&amp;sd=true"
-            target="_blank"
-            rel="noopener noreferrer"
-          >Check UPS Remote / Extended Area list</a>
-          <a
-            class="remote-reference-link"
-            href="https://drive.google.com/file/d/1mIeo4iRnbBwY7HMhrM4YpjcTF1qL4gf8/view?usp=sharing"
-            target="_blank"
-            rel="noopener noreferrer"
-          >Check DHL Remote Area list</a>
-        </div>
-      </div>
-    </section>
-
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
