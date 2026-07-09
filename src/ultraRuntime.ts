@@ -54,13 +54,14 @@ const DISTRICTS: Record<string, [string, string]> = {
 let direction: "outbound" | "inbound" = "outbound";
 let country = "AL";
 let postalCode = "";
+let language: "en" | "sq" = "en";
 
 const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
 const num = (s: string) => Number(s.replace(/,/g, ".")) || 0;
 const toEur = (all: number) => all / EUR_TO_ALL;
 const allText = (n: number) => new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(n);
 const normalizeZip = (s: string) => s.replace(/\D/g, "").slice(0, 4);
-const isSq = () => document.body.textContent?.includes("Rivendos") ?? false;
+const isSq = () => language === "sq";
 const values = (placeholder: string) => Array.from(document.querySelectorAll<HTMLInputElement>(`input[placeholder="${placeholder}"]`)).map(i => num(i.value));
 const totalWeight = () => round2(values("kg").reduce((sum, n) => sum + n, 0));
 const cod = () => Array.from(document.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')).some(i => i.checked);
@@ -86,8 +87,6 @@ function classify(raw: string): Classification | null {
     };
   }
 
-  // ULTRA charges the same 250 ALL tariff outside Tirana. Accept any other
-  // four-digit Albanian destination code even when it is not in our branch map.
   return {
     area: "district-rural",
     code,
@@ -227,10 +226,15 @@ document.addEventListener("input", event => {
 document.addEventListener("click", event => {
   if (!(event.target instanceof Element)) return;
   const label = event.target.closest("button")?.textContent?.trim() ?? "";
+  if (label === "EN") language = "en";
+  if (label === "SQ") language = "sq";
   if (label.includes("Import") || label.includes("Hyrëse")) direction = "inbound";
   if (label.includes("Export") || label.includes("Eksport") || label.includes("Dalëse")) direction = "outbound";
   if (label === "Reset" || label === "Rivendos") { direction = "outbound"; country = "AL"; postalCode = ""; }
-  queueMicrotask(updateUi);
+  queueMicrotask(() => {
+    updateUi();
+    if (label === "EN" || label === "SQ") recalculate();
+  });
 }, true);
 
 const previousFilter = Array.prototype.filter;
