@@ -49,17 +49,10 @@ function enablePricingRuntimes(): Plugin {
 
       let transformed = code;
 
-      if (!transformed.includes('import "./remoteRuntime";')) {
-        transformed = transformed.replace(
-          'import "./dhlRuntime";',
-          'import "./dhlRuntime";\nimport "./remoteRuntime";',
-        );
-      }
-
       if (!transformed.includes('import "./eliteRuntime";')) {
         transformed = transformed.replace(
-          'import "./remoteRuntime";',
-          'import "./remoteRuntime";\nimport "./eliteRuntime";',
+          'import "./dhlRuntime";',
+          'import "./dhlRuntime";\nimport "./eliteRuntime";',
         );
       }
 
@@ -97,11 +90,19 @@ function enablePricingRuntimes(): Plugin {
         )
         .replace(
           'Përdoret për kontrollin automatik të zonës së largët DHL.',
-          'Përdoret për kontrollin e itinerarit, zonës dhe tarifave shtesë.',
+          'Kodi postar përdoret për itinerarin dhe zonën. Tarifat Remote/Extended kontrollohen manualisht.',
         )
         .replace(
           'Used for automatic DHL remote-area checking.',
+          'Postal code is used for routing and zone checks. Remote/Extended surcharges are checked manually.',
+        )
+        .replace(
+          'Përdoret për kontrollin e itinerarit, zonës dhe tarifave shtesë.',
+          'Kodi postar përdoret për itinerarin dhe zonën. Tarifat Remote/Extended kontrollohen manualisht.',
+        )
+        .replace(
           'Used for route, zone and surcharge checks.',
+          'Postal code is used for routing and zone checks. Remote/Extended surcharges are checked manually.',
         );
     },
   };
